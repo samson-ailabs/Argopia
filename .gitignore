@@ -5,7 +5,6 @@ node_modules/
 working/
 data/
 reports/
-archives/
 
 # ── OS / editor junk ──
 .DS_Store

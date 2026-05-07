@@ -1,7 +1,7 @@
 # Data Contract
 
-**TL;DR:** `working/`, `data/`, `reports/`, `archives/` are yours
-forever. Everything else is the system and may be updated.
+**TL;DR:** `working/`, `data/`, `reports/` are yours forever.
+Everything else is the system and may be updated.
 
 Argopia separates files into two layers. **User-layer files are yours
 forever.** **System-layer files are auto-updatable.** Updates (`git
@@ -25,7 +25,6 @@ will never overwrite these.
 | `reports/tracker.md` | Your central application tracker |
 | `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD evaluation reports |
 | `reports/insights/<YYYY-MM-DD>.md` | On-demand market insights |
-| `archives/<domain>-<timestamp>/` | Snapshots of prior `working/` from re-onboarding |
 | Any local PDF or markdown CV files | Source documents you onboard from |
 
 These are gitignored — they don't ship with the repo.

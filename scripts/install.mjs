@@ -3,7 +3,7 @@
 //
 // Verifies Node version, confirms npm dependencies are present, creates
 // the runtime directory tree. Idempotent — safe to re-run.
-// Does NOT touch user data (working/, data/, reports/, archives/).
+// Does NOT touch user data (working/, data/, reports/).
 //
 // Usage:
 //   node scripts/install.mjs
@@ -20,7 +20,6 @@ const RUNTIME_DIRS = [
   "data/raw",
   "data/queue",
   "reports",
-  "archives",
 ];
 
 // Read runtime dependencies from package.json so install stays in sync

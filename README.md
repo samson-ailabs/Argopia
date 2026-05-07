@@ -121,8 +121,7 @@ make a new domain work, that's a bug — open an issue.
 
 ## What's mine vs the system
 
-`working/`, `data/`, `reports/`, `archives/` are gitignored — they're yours
-forever. Templates, schemas, scripts, and slash commands ship with the repo
+`working/`, `data/`, `reports/` are gitignored — they're yours forever. Templates, schemas, scripts, and slash commands ship with the repo
 and get updated. See [DATA_CONTRACT.md](DATA_CONTRACT.md) for the full
 ownership table.
 

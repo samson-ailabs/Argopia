@@ -54,7 +54,6 @@ scripts/             single-file Node helpers (.mjs)
 working/             3 user-editable files after /argopia-onboard (gitignored)
 data/                runtime state — seen.jsonl, queue/, raw/, active-domain.txt
 reports/             per-JD markdown + tracker.md + insights/
-archives/            prior working/ snapshots from re-onboarding
 ```
 
 ## `working/` contract — exactly 3 files
@@ -97,8 +96,8 @@ Environment setup runs automatically on `npm install` via
 | `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL |
 | `dedup.mjs` | `data/seen.jsonl` + stdin JSONL | stdout new URLs only |
 | `verify.mjs` | `working/*` + `schemas/*` | `working/.verified` |
-| `onboard.mjs` | `templates/<domain>/` | `working/`, `archives/`, `data/active-domain.txt` |
-| `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`, `archives/`); env check. Auto-runs on `npm install` via `postinstall`. |
+| `onboard.mjs` | `templates/<domain>/` | `working/`, `data/active-domain.txt` |
+| `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. |
 | `status.mjs` | `data/`, `reports/tracker.md` | stdout summary |
 | `lib/schema.mjs` | (library) | YAML shape validator |
 
