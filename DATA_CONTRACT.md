@@ -17,7 +17,6 @@ will never overwrite these.
 | `working/profile.yaml` | Your structured CV (after `/argopia-onboard`) |
 | `working/criteria.yaml` | Your target preferences and keyword filters |
 | `working/sources.yaml` | Which sources you've enabled / disabled |
-| `working/.verified` | Your verification stamp (don't edit by hand) |
 | `data/seen.jsonl` | URLs you've already encountered (dedup state) |
 | `data/raw/*.jsonl` | Per-scan raw fetches |
 | `data/queue/*.txt` | Per-scan filtered URL queues |
@@ -38,7 +37,7 @@ will replace these with newer versions.
 |------|---------|
 | `schemas/*.schema.yaml` | Validation contracts for `working/*.yaml` |
 | `templates/<domain>/*.yaml` | Starter templates (`default` ships; add your own per-domain) |
-| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (filter, dedup, install, verify, status) |
+| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (filter, dedup, install, status) |
 | `.claude/commands/*.md` | Slash command definitions |
 | `agents/*.md` | Reusable subagent prompts (e.g. playwright-fetcher) |
 | `.claude-plugin/plugin.json` | Plugin manifest |

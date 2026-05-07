@@ -69,10 +69,10 @@ Run:
 node scripts/onboard.mjs default
 ```
 
-This **overwrites** `working/` (drops any prior files including the
-`.verified` marker) and copies the three template files in verbatim,
-preserving comments and inline shape documentation. Template defaults
-are baked into the YAML files themselves — no synthesis at copy-time.
+This **overwrites** `working/` (drops any prior files) and copies the
+three template files in verbatim, preserving comments and inline shape
+documentation. Template defaults are baked into the YAML files
+themselves — no synthesis at copy-time.
 
 **Re-onboarding is destructive.** If the user has custom edits in
 `working/` they want to keep, advise them to back up first
@@ -167,7 +167,8 @@ board lists. No separate sources output before the checklist.
 2. *(Optional)* Tweak `working/sources.yaml` if you want to toggle
    boards or adjust `max_listings`.
 
-3. Run `/argopia-verify` when satisfied.
+3. Run `/argopia-scan` when satisfied (it validates `working/` against
+   the schemas as Step 0 and refuses if anything is malformed).
 ```
 
 Don't dump full file contents back at the user — they open the YAMLs

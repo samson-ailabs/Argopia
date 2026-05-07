@@ -72,22 +72,22 @@ The Stage-2 scoring **rubric is inlined in
 1. `/argopia-onboard <cv-path>` — parse CV, copy template to `working/`,
    derive `profile.yaml` + parts of `criteria.yaml` from CV
 2. *(user manually reviews `working/*.yaml`)*
-3. `/argopia-verify` — schema check + source shape check + filter
-   sanity → writes `working/.verified`
-4. `/argopia-scan [<url> ...]` — spawns Playwright subagents per
-   enabled source; filters; dedupes; writes queue. With URL args:
-   inject directly into queue (Mode B)
-5. `/argopia-eval [--top N | --all]` — for each queued URL: fetch JD,
+3. `/argopia-scan [<url> ...]` — validates config (schema check), then
+   spawns Playwright subagents per enabled source; filters; dedupes;
+   writes queue. With URL args: inject directly into queue (Mode B).
+4. `/argopia-eval [--top N | --all]` — for each queued URL: fetch JD,
    score against profile + criteria via inlined rubric, write report +
-   tracker row
-6. `/argopia-insights` — on demand; aggregate tracker → market-vs-CV
-   gap report
-7. `/argopia-status` — pipeline state at a glance
+   tracker row.
+5. `/argopia-insights` — on demand; aggregate tracker → market-vs-CV
+   gap report.
+6. `/argopia-status` — pipeline state at a glance.
+
 Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
 
-`/argopia-scan` **refuses** if `.verified` is missing or older than any
-`working/*.yaml`. Edit working/ → re-verify before scanning.
+`/argopia-scan` validates `working/*.yaml` against schemas as Step 0
+and refuses if anything is malformed. No separate verify step or
+`.verified` marker.
 
 ## Scripts (Node, deterministic)
 
@@ -95,7 +95,6 @@ Environment setup runs automatically on `npm install` via
 |---|---|---|
 | `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL |
 | `dedup.mjs` | `data/seen.jsonl` + stdin JSONL | stdout new URLs only |
-| `verify.mjs` | `working/*` + `schemas/*` | `working/.verified` |
 | `onboard.mjs` | `templates/<domain>/` | `working/`, `data/active-domain.txt` |
 | `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. |
 | `status.mjs` | `data/`, `reports/tracker.md` | stdout summary |
@@ -185,8 +184,6 @@ the recommendation at "skip" regardless of rubric score.
 - **Don't fabricate CV facts.** Missing field → `null`. Empty list-type
   section → `[]`. Don't infer `employment_type: full-time` unless the
   CV explicitly says so.
-- **Don't skip the `.verified` gate.** Every `working/` edit
-  invalidates it; re-run `/argopia-verify` before `/argopia-scan`.
 - **Don't add comments that restate the field name** or duplicate the
   schema's Conventions block. A field gets an inline comment only if
   the field name + type is insufficient (enum values, format quirks,

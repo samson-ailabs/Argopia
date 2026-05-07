@@ -8,7 +8,7 @@
 //
 // Behavior:
 //   1. Validate templates/<domain>/ exists with the three required YAMLs.
-//   2. Clear working/ (drops any prior files, including the .verified marker).
+//   2. Clear working/ (drops any prior files).
 //      WARNING: this is destructive — back up working/ first if you have
 //      custom edits you want to keep.
 //   3. Copy templates/<domain>/*.yaml into working/ verbatim, preserving
@@ -16,8 +16,8 @@
 //   4. Write data/active-domain.txt with the new domain name.
 //
 // Templates ship populated — all fields and defaults are baked into the
-// YAMLs themselves. No post-copy processing here; schema validation is
-// /argopia-verify's job.
+// YAMLs themselves. No post-copy processing here; schema validation runs
+// inline as Step 0 of /argopia-scan.
 
 import {
   cpSync,
@@ -127,7 +127,7 @@ function main() {
   }
 
   const overwrote = workingHasContent();
-  clearWorking(); // also removes any prior `.verified` — onboarding must re-verify
+  clearWorking();
 
   for (const f of FILES) seedFromTemplate(domain, f);
 

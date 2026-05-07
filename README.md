@@ -35,7 +35,6 @@ $ /argopia-onboard ./my-cv.pdf
 Profile (extracted from your CV): candidate, experience, education...
 Criteria (derived from your profile): search_query, target.level, ...
 
-$ /argopia-verify
 $ /argopia-scan
 $ /argopia-eval --top 10
 ```
@@ -49,9 +48,8 @@ $ /argopia-eval --top 10
   drops 70-90% of listings before Claude ever sees them.
 - **Free everything.** Public boards + your existing Claude Code session.
   No paid APIs, no Anthropic billing, no cloud storage.
-- **Verified before run.** `/argopia-scan` refuses to execute until
-  `/argopia-verify` confirms your config is sane — bad setups never
-  burn tokens.
+- **Validates before it runs.** `/argopia-scan` rejects malformed
+  config upfront — bad setups never burn tokens.
 - **Human ranks, you apply.** Argopia surfaces, scores, and explains;
   you decide whether to apply. No spray-and-pray.
 - **Yours, not the bot's.** `working/` is your editable source of truth.
@@ -81,8 +79,7 @@ That's it. The onboard command guides you through review and the rest of the pip
 | Command                   | What it does                                                  | Runs as                |
 |---------------------------|---------------------------------------------------------------|------------------------|
 | `/argopia-onboard <cv>`   | Parse CV → populate `working/profile.yaml` and `criteria.yaml`| Two subagents          |
-| `/argopia-verify`         | Schema check + reachability + filter sanity → `.verified`     | Node script            |
-| `/argopia-scan`           | Fetch enabled sources via Playwright, filter, dedup, queue    | Subagent per source    |
+| `/argopia-scan`           | Validate config, fetch enabled sources, filter, dedup, queue  | Subagent per source    |
 | `/argopia-eval [--top N]` | Fetch JD bodies, score against CV, write per-JD reports       | In-context Claude      |
 | `/argopia-insights`       | Aggregate tracker → market-vs-CV gap report (on demand)       | In-context Claude      |
 | `/argopia-status`         | Pipeline state at a glance + suggested next command           | Node script            |
