@@ -57,7 +57,7 @@ $ /argopia-eval --top 10
 
 ## Quick start
 
-**Prerequisites**: Node 20+, [Claude Code](https://docs.claude.com/en/docs/claude-code), and Playwright MCP for SPA-rendered boards.
+**Prerequisites**: Node 20+ and [Claude Code](https://docs.claude.com/en/docs/claude-code).
 
 ```bash
 git clone https://github.com/samson-ailabs/argopia.git
@@ -108,10 +108,8 @@ make a new domain work, that's a bug — open an issue.
 
 ## What's free / what's used
 
-- **No paid sources.** All shipped boards are public (RemoteOK, Remotive,
-  ai-jobs.net, Hugging Face Workable, Himalayas, Wellfound, Welcome to the Jungle).
-- **No required API keys.** Auth-walled boards (LinkedIn, YC, ITviec) are
-  listed as references but disabled by default.
+- **No paid sources.** All shipped boards are public.
+- **No required API keys.** Just `npm install` and you're set.
 - **No separate Anthropic billing.** Eval and insights run inside your
   existing Claude Code session.
 - **Two npm deps.** `js-yaml` for parsing, `ajv` for JSON Schema validation.
@@ -125,18 +123,24 @@ ownership table.
 ## Status & roadmap
 
 **v0.1.0 — public alpha.** Onboarding flow, default template, schemas, and
-the Stage-1 + Stage-2 pipeline work end-to-end. Plugin packaging in place
-but not yet listed on the Claude Code marketplace.
+the full pipeline work end-to-end across a curated set of public job
+boards (HN Algolia, RemoteOK, Remotive, ai-jobs.net, Himalayas). Plugin
+packaging in place but not yet listed on the Claude Code marketplace.
 
-What's next: domain templates (frontend, backend, ML research), session-aware
-support for auth-walled boards, optional auto-update.
+What's next: more board coverage (Wellfound, HuggingFace careers, Welcome
+to the Jungle), additional domain templates (frontend, backend, ML
+research), and optional auto-update.
 
 ## What it doesn't do (yet)
 
-- **Apply for you** — Argopia ranks; you click apply. Always. Human-in-the-loop is the design.
+- **Some boards aren't supported yet** — Wellfound, HuggingFace careers,
+  Welcome to the Jungle, LinkedIn, YC Work at a Startup, ITviec. They're
+  shipped disabled in `working/sources.yaml` and re-enable as support
+  lands.
+- **Apply for you** — Argopia ranks; you click apply. Always.
+  Human-in-the-loop is the design.
 - **Generate tailored CVs** per JD — separate problem; not in scope for v0.x.
 - **Multi-CLI** (Gemini CLI, OpenCode, Qwen, etc.) — Claude Code only for now.
-- **Auth-walled boards out of the box** — LinkedIn, YC, ITviec deferred to v0.3+.
 
 ## Sponsor
 
@@ -144,8 +148,8 @@ Argopia is built and maintained solo, in spare time. If it saves you hours of
 job-search drudgery, [sponsoring on GitHub](https://github.com/sponsors/samson-ailabs)
 keeps the project active and unlocks:
 
+- More board coverage (Wellfound, HuggingFace careers, Welcome to the Jungle, LinkedIn)
 - Additional domain templates (frontend, backend, ML research, data engineering)
-- Session-aware adapters for LinkedIn / YC Work at a Startup
 - Auto-updater (`scripts/update-system.mjs`)
 - Faster issue triage and feature requests
 

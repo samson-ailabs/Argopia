@@ -10,10 +10,10 @@ User-layer vs system-layer file ownership is documented in
 ## Stack
 
 - Node 20+ — two npm deps: `js-yaml` (parse YAML), `ajv` (JSON Schema validation)
-- Playwright MCP (when present in the user's Claude Code session) for
-  SPA-rendered job sources
 - No API keys, no Anthropic SDK — eval runs in the user's existing
   Claude Code session at whatever model is configured
+- No MCP browser dependency for v0.1. SPA-rendered and auth-walled boards
+  are shipped disabled in `sources.yaml` until browser-MCP support lands.
 
 ## Where to read first
 
@@ -47,7 +47,7 @@ something belongs:
 ```
 .claude-plugin/      plugin manifest (commands/agents/MCP discovery)
 .claude/commands/    user-facing slash commands (entry surface)
-agents/              reusable subagent prompts (profile-extractor, criteria-deriver, playwright-fetcher)
+agents/              reusable subagent prompts (profile-extractor, criteria-deriver)
 schemas/             3 validation contracts (profile, criteria, sources)
 templates/<domain>/  starter library; `default` is the shipped domain-agnostic scaffold
 scripts/             single-file Node helpers (.mjs)

@@ -23,8 +23,7 @@
     "remote-work",
     "claude-code",
     "claude-code-plugin",
-    "automation",
-    "playwright-mcp"
+    "automation"
   ],
   "engines": {
     "node": ">=20"

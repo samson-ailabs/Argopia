@@ -39,7 +39,7 @@ will replace these with newer versions.
 | `templates/<domain>/*.yaml` | Starter templates (`default` ships; add your own per-domain) |
 | `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (filter, dedup, install, status) |
 | `.claude/commands/*.md` | Slash command definitions |
-| `agents/*.md` | Reusable subagent prompts (e.g. playwright-fetcher) |
+| `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
 | `.claude-plugin/plugin.json` | Plugin manifest |
 | `.mcp.json` | MCP server declarations |
 | `CLAUDE.md`, `README.md`, `DATA_CONTRACT.md` | Framework docs |

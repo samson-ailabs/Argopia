@@ -1,25 +1,32 @@
-# Job board catalog — consumed by /argopia-scan via Playwright subagent.
+# Job board catalog — consumed by /argopia-scan.
 # Schema: schemas/sources.schema.yaml
 #
-# One entry per job board. Each entry tells the scanner how to navigate
-# the board, find listing links, and paginate.
+# Each entry tells the scanner where to look and how to extract listings.
+# Disabled entries (enabled: false) are kept for reference; they re-enable
+# as the corresponding fetch path lands (browser MCP for SPAs, logged-in
+# Browser MCP for auth-walled boards).
 #
 # Fields (all entries share the same shape):
 #   enabled        — true: scanner uses this source. false: skipped.
-#   base_url       — landing/search page; scanner navigates here first.
+#   base_url       — landing/search/API page; scanner navigates here first.
 #   no_auth        — true: scanner refuses any redirect to a login page.
 #                    false: auth-walled board (kept for reference, with enabled: false).
-#   link_selector  — CSS selector matching anchor elements that point at job listings.
+#   link_selector  — CSS selector for JD anchors (HTML/SPA paths only).
 #   link_pattern   — regex an extracted href must match (filters out nav / non-job links).
 #   link_base      — origin prefix used to absolutize relative href values.
 #   pagination     — scroll | next-button | none.
 #   max_listings   — cap per scan; bounds token cost.
-#   filter_hints   — free-form prose for the Playwright subagent (board-specific quirks:
-#                    filter widget locations, search-input behavior, etc.).
-#   fetch_jd       — auto: WebFetch first, Playwright fallback if SPA / blocked. (only "auto" today.)
-#
-# Auth-walled boards (LinkedIn, YC Work at a Startup, ITviec) stay listed
-# with enabled: false so their URLs aren't lost. Phase 3 will revisit auth.
+#   filter_hints   — free-form prose for the scan agent (board-specific quirks).
+#   fetch_jd       — auto: WebFetch first, browser MCP fallback if SPA / blocked.
+
+hn_algolia:
+  enabled: true
+  base_url: "https://hn.algolia.com/api/v1/search?query=Ask+HN+Who+is+hiring&tags=story,author_whoishiring&hitsPerPage=1"
+  no_auth: true
+  pagination: none
+  max_listings: 50
+  fetch_jd: auto
+  filter_hints: "Latest hit is the current Who-Is-Hiring thread; its comments are individual JDs (fetched via /api/v1/items/<id>)."
 
 remoteok:
   enabled: true
@@ -31,6 +38,7 @@ remoteok:
   pagination: scroll
   max_listings: 50
   fetch_jd: auto
+  filter_hints: "Has a JSON API at /api; scan should prefer it over HTML scrape."
 
 remotive:
   enabled: true
@@ -41,8 +49,8 @@ remotive:
   link_base: "https://remotive.com"
   pagination: none
   max_listings: 50
-  filter_hints: "Search input is a text box; ?search=… in URL is stripped on redirect — type the query into the search box instead."
   fetch_jd: auto
+  filter_hints: "Has a JSON API at /api/remote-jobs; HTML fallback fields kept for diagnosis."
 
 ai_jobs_net:
   enabled: true
@@ -53,19 +61,7 @@ ai_jobs_net:
   link_base: "https://aijobs.net"
   pagination: next-button
   max_listings: 50
-  filter_hints: "No <time> on cards — posted-date is text 'Nd ago'. Search input is at top; experience-level and remote toggles are in the left rail."
-  fetch_jd: auto
-
-huggingface:
-  enabled: true
-  base_url: "https://apply.workable.com/huggingface/"
-  no_auth: true
-  link_selector: 'a[href*="/huggingface/j/"]'
-  link_pattern: '/huggingface/j/[A-Z0-9]+/?$'
-  link_base: "https://apply.workable.com"
-  pagination: scroll
-  max_listings: 50
-  filter_hints: "Workable career portal. Filters live in left-rail dropdowns: Department, Location, Workplace type. Search input at top of listings."
+  filter_hints: "No <time> on cards — posted-date is text 'Nd ago'. Search input at top; experience-level and remote toggles in left rail."
   fetch_jd: auto
 
 himalayas:
@@ -79,8 +75,22 @@ himalayas:
   max_listings: 50
   fetch_jd: auto
 
+# Disabled — SPA boards that need a stealth browser MCP. Re-enable when
+# browser-MCP support lands.
+huggingface:
+  enabled: false
+  base_url: "https://apply.workable.com/huggingface/"
+  no_auth: true
+  link_selector: 'a[href*="/huggingface/j/"]'
+  link_pattern: '/huggingface/j/[A-Z0-9]+/?$'
+  link_base: "https://apply.workable.com"
+  pagination: scroll
+  max_listings: 50
+  filter_hints: "Workable career portal. Filters in left-rail dropdowns: Department, Location, Workplace type. Search input at top."
+  fetch_jd: auto
+
 wellfound:
-  enabled: true
+  enabled: false
   base_url: "https://wellfound.com/jobs"
   no_auth: true
   link_selector: 'a[href*="/jobs/"]'
@@ -88,11 +98,11 @@ wellfound:
   link_base: "https://wellfound.com"
   pagination: next-button
   max_listings: 50
-  filter_hints: "Role and tech filters use typeahead inputs (start typing, pick from dropdown). Job-detail URLs follow /jobs/<numeric-id>-<slug>."
+  filter_hints: "Heavy anti-bot (Cloudflare). Role/tech filters use typeahead inputs. Job-detail URLs follow /jobs/<numeric-id>-<slug>."
   fetch_jd: auto
 
 welcome_to_the_jungle:
-  enabled: true
+  enabled: false
   base_url: "https://www.welcometothejungle.com/en/jobs"
   no_auth: true
   link_selector: 'a[href*="/jobs/"]'
@@ -102,8 +112,7 @@ welcome_to_the_jungle:
   max_listings: 50
   fetch_jd: auto
 
-# --- Auth-walled ---
-
+# Disabled — auth-walled boards that need a logged-in Browser MCP session.
 linkedin:
   enabled: false
   base_url: "https://www.linkedin.com/jobs/search/"

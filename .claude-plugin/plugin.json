@@ -18,10 +18,8 @@
     "remote-work",
     "claude-code",
     "claude-code-plugin",
-    "automation",
-    "playwright-mcp"
+    "automation"
   ],
   "commands": ".claude/commands/",
-  "agents": "agents/",
-  "mcpServers": ".mcp.json"
+  "agents": "agents/"
 }
