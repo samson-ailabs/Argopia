@@ -37,11 +37,10 @@ will replace these with newer versions.
 |------|---------|
 | `schemas/*.schema.yaml` | Validation contracts for `working/*.yaml` |
 | `templates/<domain>/*.yaml` | Starter templates (`default` ships; add your own per-domain) |
-| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (filter, dedup, install, status) |
+| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, filter, dedup, status) |
 | `.claude/commands/*.md` | Slash command definitions |
 | `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
 | `.claude-plugin/plugin.json` | Plugin manifest |
-| `.mcp.json` | MCP server declarations |
 | `CLAUDE.md`, `README.md`, `DATA_CONTRACT.md` | Framework docs |
 | `LICENSE` | Project license (MIT). `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` planned. |
 | `package.json`, `package-lock.json` | Dependencies |

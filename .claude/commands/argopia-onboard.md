@@ -46,8 +46,8 @@ For each agent invocation:
      block substituted as the `prompt`.
    - `description`: `"Argopia <name>"`.
 4. **Wait** for the JSON status return.
-5. **Apply per-step `on_failure` behavior** and **hold per-step
-   `keep_for_checklist` fields** (defined below).
+5. **Apply** the per-step failure behavior and remember the per-step
+   JSON fields for the Step 4 checklist (each step's table specifies both).
 
 ## Step 0 — Validate input
 
@@ -107,19 +107,20 @@ Apply the dispatch protocol with:
 
 ## Step 4 — Print review checklist
 
-**Data gathering**: read `working/sources.yaml` once to extract Active
-(`enabled: true`) and Skipped (`enabled: false`, typically auth-walled)
-board lists. No separate sources output before the checklist.
+**Data gathering**: read `working/sources.yaml` once to extract two
+source lists — Active (entries where `enabled: true`) and Disabled
+(`enabled: false`). Both are dynamic; pull whatever is actually in the
+user's working file, not hardcoded names.
 
 **Styling rules:**
 - Markdown: `**bold**` for labels, `*italic*` for parenthetical
   context, `` `inline code` `` for field/value names.
 - Unicode glyphs: `✓` (done), `▸` (bullets), `⚠` (attention), `──`
   (divider). No emojis.
-- ≤40 lines total.
-- Pull bracketed values from each subagent's JSON status. Group
-  similar items where natural. Example values below are illustrative
-  — substitute the candidate's actual data.
+- Substitute every `<placeholder>` in the template with real data from
+  the subagent JSON / sources.yaml. Group similar items where natural.
+- Omit the **Recovered** bullet entirely when `url_recovery_attempted = 0`.
+- Don't dump full file contents — the user opens YAMLs to inspect.
 
 **Output template:**
 
@@ -127,24 +128,23 @@ board lists. No separate sources output before the checklist.
 **✓ Onboarded** with the default template
 
 **Profile** *(extracted from your CV)*
-  ▸ **Filled:** `candidate`, `experience`, `education`, `projects`, `publications`, `awards`, `tech_stack`
+  ▸ **Filled:** <comma-sep section names from profile-extractor's `filled_sections`>
   ▸ **Stayed empty** — fine if your CV didn't mention them:
       Contact: `twitter`, `blog`, `portfolio`, `website`
       Employment: `employment_type`, `team_size_managed` for IC roles
       Misc: project URLs, publication citations, language test scores
       Sections: `patents`, `open_source`, `certifications`, `talks`, `volunteering`
   ▸ **Recovered:** <url_recovery_succeeded> of <url_recovery_attempted> publication URLs
-  (Omit the recovery bullet if url_recovery_attempted = 0.)
 
 **Criteria** *(derived from your profile)*
 
   **Auto-filled** — please review and adjust:
-    ✓ `search_query`: `"speech"`
-    ✓ `target.level`: `[Lead, Principal, Staff, Head]` *(current title: Lead AI Engineer)*
-    ✓ `timezones`: preferred `[APAC]`, acceptable `[EMEA]` *(Vietnam)*
-    ✓ `excluded_companies`: added `"VoxLab AI"` *(your current employer)*
-    ✓ **Keywords:** 16 job titles, 12 token sets, 24 technical, 12 tools
-    ✓ **5** work-auth deal breakers, **3** nice-to-haves from CV signals
+    ✓ `search_query`: <value>
+    ✓ `target.level`: <list> *(current title: <CV current_title>)*
+    ✓ `timezones`: preferred <[REGION]>, acceptable <[REGION]> *(<candidate.location.country>)*
+    ✓ `excluded_companies`: added <"company name(s)"> *(your current employer)*
+    ✓ **Keywords:** <N> job titles, <N> token sets, <N> technical, <N> tools
+    ✓ **<N>** work-auth deal breakers, **<N>** nice-to-haves from CV signals
 
   **⚠ Needs your judgment** *(template defaults):*
     ▸ `remote_only`, `open_to_relocate`, `max_listing_age_days` *(currently 90)*
@@ -152,8 +152,8 @@ board lists. No separate sources output before the checklist.
     ▸ `keywords.negative` *(industries/values to avoid)*
 
 **Sources** *(preset — yours to edit)*
-  ▸ **Active:** `remoteok`, `remotive`, `ai_jobs_net`, `huggingface`, `himalayas`, `wellfound`, `welcome_to_the_jungle`
-  ▸ **Skipped** *(auth-walled)*: `linkedin`, `ycombinator`, `itviec`
+  ▸ **Active:** <comma-sep list of source slugs where `enabled: true`, read from working/sources.yaml>
+  ▸ **Disabled:** <comma-sep list of source slugs where `enabled: false`>
   ▸ Edit `working/sources.yaml` to toggle boards or tune `max_listings`
 
 ──────────────────────────
@@ -170,9 +170,6 @@ board lists. No separate sources output before the checklist.
 3. Run `/argopia-scan` when satisfied (it validates `working/` against
    the schemas as Step 0 and refuses if anything is malformed).
 ```
-
-Don't dump full file contents back at the user — they open the YAMLs
-themselves to inspect.
 
 ## Token discipline
 

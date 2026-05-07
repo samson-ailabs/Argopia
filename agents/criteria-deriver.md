@@ -16,7 +16,7 @@ keywords from achievements, nice-to-haves from CV signals.
 ## Inputs
 
 ```
-domain: <chosen template domain, e.g. "speech-ai">
+domain: <chosen template domain, e.g. "default">
 ```
 
 **Pre-conditions:**
@@ -85,11 +85,13 @@ present (case-insensitive). Keep all template entries.
 
 #### E. `keywords.positive.title_token_sets`
 
-For each level chosen in B × domain anchor, append a token set if not
-already covered by the template. Example for speech-ai +
-`[Senior, Staff, Lead, Principal, Head]`:
+For each level chosen in B × domain anchor (derived from the candidate's
+`tech_stack` keys or current title — e.g. "speech", "frontend", "ml"),
+append a token set if not already covered by the template. Example for
+levels `[Senior, Staff, Lead, Principal, Head]` with anchor "speech":
 `[lead, engineer, speech]`, `[principal, engineer, speech]`,
-`[staff, engineer, audio]`, etc.
+`[staff, engineer, audio]`, etc. The same pattern applies for any
+domain anchor.
 
 #### F. `keywords.positive.{job_titles, technical, tools}` — fill from CV
 
@@ -171,6 +173,7 @@ template. Leave them alone:
   },
   "left_for_manual_review": [
     "target.remote_only", "target.open_to_relocate",
+    "target.max_listing_age_days",
     "must_haves", "keywords.negative"
   ]
 }

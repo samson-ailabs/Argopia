@@ -79,7 +79,7 @@ That's it. The onboard command guides you through review and the rest of the pip
 | Command                   | What it does                                                  | Runs as                |
 |---------------------------|---------------------------------------------------------------|------------------------|
 | `/argopia-onboard <cv>`   | Parse CV → populate `working/profile.yaml` and `criteria.yaml`| Two subagents          |
-| `/argopia-scan`           | Validate config, fetch enabled sources, filter, dedup, queue  | Subagent per source    |
+| `/argopia-scan`           | Validate config, fetch enabled sources, filter, dedup, queue  | Type-dispatched: api/html direct, browser-MCP for SPA |
 | `/argopia-eval [--top N]` | Fetch JD bodies, score against CV, write per-JD reports       | In-context Claude      |
 | `/argopia-insights`       | Aggregate tracker → market-vs-CV gap report (on demand)       | In-context Claude      |
 | `/argopia-status`         | Pipeline state at a glance + suggested next command           | Node script            |
@@ -122,21 +122,20 @@ ownership table.
 
 ## Status & roadmap
 
-**v0.1.0 — public alpha.** Onboarding flow, default template, schemas, and
-the full pipeline work end-to-end across a curated set of public job
-boards (HN Algolia, RemoteOK, Remotive, ai-jobs.net, Himalayas). Plugin
-packaging in place but not yet listed on the Claude Code marketplace.
+**v0.1.0 — public alpha.** Onboarding flow, default template, schemas,
+and the full pipeline work end-to-end across the curated boards shipped
+in `templates/default/sources.yaml`. Plugin packaging in place but not
+yet listed on the Claude Code marketplace.
 
-What's next: more board coverage (Wellfound, HuggingFace careers, Welcome
-to the Jungle), additional domain templates (frontend, backend, ML
+What's next: more board coverage (SPA-rendered + auth-walled boards via
+browser MCP), additional domain templates (frontend, backend, ML
 research), and optional auto-update.
 
 ## What it doesn't do (yet)
 
-- **Some boards aren't supported yet** — Wellfound, HuggingFace careers,
-  Welcome to the Jungle, LinkedIn, YC Work at a Startup, ITviec. They're
-  shipped disabled in `working/sources.yaml` and re-enable as support
-  lands.
+- **Some boards aren't supported yet** — anything SPA-rendered (heavy
+  anti-bot) or auth-walled ships disabled in `working/sources.yaml`.
+  They re-enable as browser-MCP support lands.
 - **Apply for you** — Argopia ranks; you click apply. Always.
   Human-in-the-loop is the design.
 - **Generate tailored CVs** per JD — separate problem; not in scope for v0.x.
@@ -148,7 +147,7 @@ Argopia is built and maintained solo, in spare time. If it saves you hours of
 job-search drudgery, [sponsoring on GitHub](https://github.com/sponsors/samson-ailabs)
 keeps the project active and unlocks:
 
-- More board coverage (Wellfound, HuggingFace careers, Welcome to the Jungle, LinkedIn)
+- More board coverage (SPA-rendered and auth-walled boards via browser MCP)
 - Additional domain templates (frontend, backend, ML research, data engineering)
 - Auto-updater (`scripts/update-system.mjs`)
 - Faster issue triage and feature requests

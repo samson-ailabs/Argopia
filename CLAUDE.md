@@ -62,7 +62,7 @@ reports/             per-JD markdown + tracker.md + insights/
 |---|---|
 | `profile.yaml` | **Identity** — who I am, what I've built, what I know |
 | `criteria.yaml` | **Preferences** — what I want / won't accept; Stage-1 keyword rules |
-| `sources.yaml` | **Where to look** — one entry per board (all fetched via Playwright MCP) |
+| `sources.yaml` | **Where to look** — one entry per board, dispatched by `type` (api / html / browser) |
 
 The Stage-2 scoring **rubric is inlined in
 `.claude/commands/argopia-eval.md`** — not a separate YAML.
@@ -73,8 +73,9 @@ The Stage-2 scoring **rubric is inlined in
    derive `profile.yaml` + parts of `criteria.yaml` from CV
 2. *(user manually reviews `working/*.yaml`)*
 3. `/argopia-scan [<url> ...]` — validates config (schema check), then
-   spawns Playwright subagents per enabled source; filters; dedupes;
-   writes queue. With URL args: inject directly into queue (Mode B).
+   dispatches each enabled source by its `type` (api → Node fetch, html →
+   WebFetch, browser → browser-MCP subagent); filters; dedupes; writes
+   queue. With URL args: inject directly into queue (Mode B).
 4. `/argopia-eval [--top N | --all]` — for each queued URL: fetch JD,
    score against profile + criteria via inlined rubric, write report +
    tracker row.
@@ -86,8 +87,7 @@ Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
 
 `/argopia-scan` validates `working/*.yaml` against schemas as Step 0
-and refuses if anything is malformed. No separate verify step or
-`.verified` marker.
+and refuses if anything is malformed.
 
 ## Scripts (Node, deterministic)
 
@@ -176,9 +176,10 @@ the recommendation at "skip" regardless of rubric score.
 - **Don't reference Stage 2 behavior in profile / sources schema
   comments.** File-scope only. The rubric / scoring / "model normalizes
   X" lives in `argopia-eval.md`, not in profile schema.
-- **Don't add direct-mode adapter scripts.** Every source is fetched via
-  Playwright MCP. We dropped per-site Node adapters in favor of a single
-  navigation flow.
+- **Don't add per-site adapter scripts.** Source-specific behavior lives
+  in `sources.yaml` config (selectors, patterns, field_map), dispatched by
+  `type` (api / html / browser). Adding a `.mjs` per board would
+  duplicate config that's already declarative.
 - **Don't break the 3-file `working/` contract.** New runtime config
   goes in `schemas/` (validation) or `templates/<domain>/` (defaults).
 - **Don't fabricate CV facts.** Missing field → `null`. Empty list-type
