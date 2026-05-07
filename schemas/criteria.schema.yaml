@@ -1,0 +1,60 @@
+# JSON Schema (Draft 2020-12) for working/criteria.yaml — candidate preferences.
+#
+# Conventions:
+#   - Required keys must exist; optional keys may be omitted. `null` / `[]` keeps shape stable.
+#   - keywords.positive is OR-matched (any hit qualifies a listing).
+#   - keywords.negative is AND-NOT-matched (any hit drops a listing).
+#   - Defaults below are universal user preferences applied on top of the
+#     domain template's curated keyword/deal-breaker baseline.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Argopia criteria
+
+type: object
+additionalProperties: false
+required: [target, keywords]
+
+properties:
+  target:
+    type: object
+    additionalProperties: false
+    required: [domain]
+    properties:
+      domain:               { type: [string, "null"], default: null }
+      level:                { type: array, items: { type: string }, default: [] }
+      remote_only:          { type: boolean, default: true }
+      open_to_relocate:     { type: boolean, default: false }
+      preferred_timezones:  { type: array, items: { type: string }, default: [] }
+      acceptable_timezones: { type: array, items: { type: string }, default: [] }
+      excluded_companies:   { type: array, items: { type: string }, default: [] }
+      max_listing_age_days: { type: integer, default: 90 }
+      search_query:         { type: [string, "null"], default: null }
+
+  keywords:
+    type: object
+    additionalProperties: false
+    required: [positive, negative]
+    properties:
+      positive:
+        type: object
+        additionalProperties: false
+        required: [job_titles]
+        properties:
+          job_titles:
+            type: array
+            items: { type: string }
+            default: []
+          technical: { type: array, items: { type: string }, default: [] }
+          tools:     { type: array, items: { type: string }, default: [] }
+          title_token_sets:
+            type: array
+            default: []
+            items:
+              type: array
+              items: { type: string }
+              minItems: 2
+      negative: { type: array, items: { type: string }, default: [] }
+
+  must_haves:    { type: array, items: { type: string }, default: [] }
+  deal_breakers: { type: array, items: { type: string }, default: [] }
+  nice_to_haves: { type: array, items: { type: string }, default: [] }

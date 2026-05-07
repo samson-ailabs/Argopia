@@ -1,0 +1,35 @@
+# JSON Schema (Draft 2020-12) for working/sources.yaml — where to look.
+#
+# Conventions:
+#   - One entry per job board (key = source slug).
+#   - Required keys must exist; optional keys may be omitted. `null` keeps shape stable.
+#   - Auth-walled boards stay listed with `enabled: false` so their entry
+#     points aren't lost.
+#   - Defaults below apply to fields each source omits — most sources
+#     specify everything explicitly, but new entries can rely on these.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Argopia sources
+
+type: object
+additionalProperties:
+  type: object
+  additionalProperties: false
+  required: [enabled, base_url]
+  properties:
+    enabled:       { type: boolean }
+    base_url:      { type: string, description: "listings page (not a search URL)" }
+    no_auth:       { type: boolean, default: true }
+    link_selector: { type: [string, "null"], default: null, description: "CSS selector for JD-page anchors" }
+    link_pattern:  { type: [string, "null"], default: null, description: "regex on href; non-matches dropped" }
+    link_base:     { type: [string, "null"], default: null, description: "absolute base for resolving relative hrefs" }
+    pagination:
+      type: string
+      enum: [scroll, next-button, none]
+      default: scroll
+    max_listings:  { type: integer, default: 50 }
+    filter_hints:  { type: [string, "null"], default: null }
+    fetch_jd:
+      type: string
+      enum: [auto, webfetch, playwright]
+      default: auto

@@ -1,0 +1,247 @@
+# JSON Schema (Draft 2020-12) for working/profile.yaml — candidate identity.
+#
+# Conventions:
+#   - Required keys must exist; their value may be null. Optional keys may
+#     be omitted; null / [] keeps shape stable.
+#   - Date strings are "YYYY-MM" or "YYYY"; `end` may be "present".
+#   - Defaults below populate fresh scaffolds; the profile-extractor agent
+#     then overwrites null values with CV-derived facts.
+
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: Argopia profile
+
+type: object
+additionalProperties: false
+required: [candidate, experience]
+
+properties:
+  candidate:
+    type: object
+    additionalProperties: false
+    required: [name, current_title, years_experience, summary]
+    default: {}
+    properties:
+      name:                 { type: [string, "null"], default: null }
+      current_title:        { type: [string, "null"], default: null }
+      years_experience:     { type: [integer, "null"], default: null }
+      summary:              { type: [string, "null"], default: null, description: "2-4 sentence professional pitch" }
+
+      contact:
+        type: object
+        additionalProperties: false
+        default: {}
+        properties:
+          email:    { type: [string, "null"], default: null }
+          phone:    { type: [string, "null"], default: null }
+          linkedin: { type: [string, "null"], default: null }
+          github:   { type: [string, "null"], default: null }
+          twitter:  { type: [string, "null"], default: null }
+          blog:     { type: [string, "null"], default: null }
+          portfolio: { type: [string, "null"], default: null }
+          website:   { type: [string, "null"], default: null }
+          other_links:
+            type: array
+            default: []
+            items:
+              type: object
+              additionalProperties: false
+              required: [label, url]
+              properties:
+                label: { type: string }
+                url:   { type: string }
+
+      location:
+        type: object
+        additionalProperties: false
+        default: {}
+        properties:
+          country:  { type: [string, "null"], default: null }
+          city:     { type: [string, "null"], default: null }
+          timezone: { type: [string, "null"], default: null, description: "IANA format (e.g. Asia/Singapore)" }
+
+      languages:
+        type: array
+        default: []
+        items:
+          type: object
+          additionalProperties: false
+          required: [language]
+          properties:
+            language:    { type: string }
+            proficiency: { type: [string, "null"], default: null, enum: [native, fluent, professional, working, conversational, basic, null] }
+            test_scores: { type: [object, "null"], default: null, description: "free-form, e.g. { toeic: 780 }" }
+
+      work_authorized_in:
+        type: array
+        items: { type: string }
+        default: []
+
+  experience:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [employer, title, start]
+      properties:
+        employer:          { type: [string, "null"], default: null }
+        title:             { type: [string, "null"], default: null }
+        start:             { type: [string, "null"], default: null }
+        end:               { type: [string, "null"], default: null }
+        employment_type:   { type: [string, "null"], default: null, enum: [full-time, contract, part-time, freelance, internship, null] }
+        team_size_managed: { type: [integer, "null"], default: null, description: "null for IC roles" }
+        achievements:
+          type: array
+          items: { type: string }
+          default: []
+
+  tech_stack:
+    type: object
+    default: {}
+    additionalProperties:
+      type: array
+      items: { type: string }
+
+  education:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [institution]
+      properties:
+        institution: { type: [string, "null"], default: null }
+        degree:      { type: [string, "null"], default: null }
+        field:       { type: [string, "null"], default: null }
+        minor:       { type: [string, "null"], default: null }
+        start:       { type: [string, "null"], default: null }
+        end:         { type: [string, "null"], default: null }
+        gpa:         { type: [string, "null"], default: null, description: '"3.44/4.0", "First Class Honours", etc.' }
+        honors:
+          type: array
+          items: { type: string }
+          default: []
+        thesis: { type: [string, "null"], default: null }
+
+  projects:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:  { type: [string, "null"], default: null }
+        role:  { type: [string, "null"], default: null }
+        start: { type: [string, "null"], default: null }
+        end:   { type: [string, "null"], default: null }
+        url:   { type: [string, "null"], default: null }
+        achievements:
+          type: array
+          items: { type: string }
+          default: []
+
+  publications:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:     { type: [string, "null"], default: null }
+        venue:     { type: [string, "null"], default: null }
+        year:      { type: [string, "null"], default: null }
+        authors:   { type: [string, "null"], default: null, description: "free-form, comma-separated" }
+        url:       { type: [string, "null"], default: null }
+        kind:      { type: [string, "null"], default: null, enum: [paper, preprint, book, book_chapter, thesis, null] }
+        citations: { type: [integer, "null"], default: null, description: "only fill when CV explicitly cites a count" }
+
+  patents:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title:     { type: [string, "null"], default: null }
+        number:    { type: [string, "null"], default: null }
+        year:      { type: [string, "null"], default: null }
+        inventors: { type: [string, "null"], default: null, description: "free-form, comma-separated" }
+        status:    { type: [string, "null"], default: null, enum: [filed, published, granted, null] }
+        url:       { type: [string, "null"], default: null }
+
+  open_source:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:        { type: [string, "null"], default: null }
+        role:        { type: [string, "null"], default: null, enum: [author, maintainer, core_contributor, contributor, null] }
+        description: { type: [string, "null"], default: null }
+        url:         { type: [string, "null"], default: null }
+        stars:       { type: [integer, "null"], default: null }
+        start:       { type: [string, "null"], default: null }
+        end:         { type: [string, "null"], default: null }
+
+  awards:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:   { type: [string, "null"], default: null }
+        year:   { type: [string, "null"], default: null, description: "accepts ranges (e.g. \"2021-2023\")" }
+        issuer: { type: [string, "null"], default: null }
+        url:    { type: [string, "null"], default: null }
+
+  certifications:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:    { type: [string, "null"], default: null }
+        issuer:  { type: [string, "null"], default: null }
+        earned:  { type: [string, "null"], default: null }
+        expires: { type: [string, "null"], default: null, description: "null for non-expiring certs" }
+        url:     { type: [string, "null"], default: null }
+
+  talks:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [title]
+      properties:
+        title: { type: [string, "null"], default: null }
+        venue: { type: [string, "null"], default: null }
+        year:  { type: [string, "null"], default: null }
+        kind:  { type: [string, "null"], default: null, enum: [keynote, conference_talk, workshop, webinar, panel, null] }
+        url:   { type: [string, "null"], default: null }
+
+  volunteering:
+    type: array
+    default: []
+    items:
+      type: object
+      additionalProperties: false
+      required: [organization]
+      properties:
+        organization: { type: [string, "null"], default: null }
+        role:         { type: [string, "null"], default: null }
+        start:        { type: [string, "null"], default: null }
+        end:          { type: [string, "null"], default: null }
+        achievements:
+          type: array
+          items: { type: string }
+          default: []
