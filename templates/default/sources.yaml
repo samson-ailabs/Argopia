@@ -1,0 +1,123 @@
+# Job board catalog — consumed by /argopia-scan via Playwright subagent.
+# Schema: schemas/sources.schema.yaml
+#
+# One entry per job board. Each entry tells the scanner how to navigate
+# the board, find listing links, and paginate.
+#
+# Fields (all entries share the same shape):
+#   enabled        — true: scanner uses this source. false: skipped.
+#   base_url       — landing/search page; scanner navigates here first.
+#   no_auth        — true: scanner refuses any redirect to a login page.
+#                    false: auth-walled board (kept for reference, with enabled: false).
+#   link_selector  — CSS selector matching anchor elements that point at job listings.
+#   link_pattern   — regex an extracted href must match (filters out nav / non-job links).
+#   link_base      — origin prefix used to absolutize relative href values.
+#   pagination     — scroll | next-button | none.
+#   max_listings   — cap per scan; bounds token cost.
+#   filter_hints   — free-form prose for the Playwright subagent (board-specific quirks:
+#                    filter widget locations, search-input behavior, etc.).
+#   fetch_jd       — auto: WebFetch first, Playwright fallback if SPA / blocked. (only "auto" today.)
+#
+# Auth-walled boards (LinkedIn, YC Work at a Startup, ITviec) stay listed
+# with enabled: false so their URLs aren't lost. Phase 3 will revisit auth.
+
+remoteok:
+  enabled: true
+  base_url: "https://remoteok.com/"
+  no_auth: true
+  link_selector: 'a[href*="/remote-jobs/"]'
+  link_pattern: '/remote-jobs/.+\d+$'
+  link_base: "https://remoteok.com"
+  pagination: scroll
+  max_listings: 50
+  fetch_jd: auto
+
+remotive:
+  enabled: true
+  base_url: "https://remotive.com/remote-jobs"
+  no_auth: true
+  link_selector: 'a.remotive-url-visit'
+  link_pattern: '/remote-jobs/.+/.+\d+$'
+  link_base: "https://remotive.com"
+  pagination: none
+  max_listings: 50
+  filter_hints: "Search input is a text box; ?search=… in URL is stripped on redirect — type the query into the search box instead."
+  fetch_jd: auto
+
+ai_jobs_net:
+  enabled: true
+  base_url: "https://aijobs.net/"
+  no_auth: true
+  link_selector: '#job_list a[href*="/job/"]'
+  link_pattern: '/job/.+\d+/?$'
+  link_base: "https://aijobs.net"
+  pagination: next-button
+  max_listings: 50
+  filter_hints: "No <time> on cards — posted-date is text 'Nd ago'. Search input is at top; experience-level and remote toggles are in the left rail."
+  fetch_jd: auto
+
+huggingface:
+  enabled: true
+  base_url: "https://apply.workable.com/huggingface/"
+  no_auth: true
+  link_selector: 'a[href*="/huggingface/j/"]'
+  link_pattern: '/huggingface/j/[A-Z0-9]+/?$'
+  link_base: "https://apply.workable.com"
+  pagination: scroll
+  max_listings: 50
+  filter_hints: "Workable career portal. Filters live in left-rail dropdowns: Department, Location, Workplace type. Search input at top of listings."
+  fetch_jd: auto
+
+himalayas:
+  enabled: true
+  base_url: "https://himalayas.app/jobs"
+  no_auth: true
+  link_selector: 'a[href*="/jobs/"]'
+  link_pattern: '/jobs/[^/]+/[^/]+$'
+  link_base: "https://himalayas.app"
+  pagination: scroll
+  max_listings: 50
+  fetch_jd: auto
+
+wellfound:
+  enabled: true
+  base_url: "https://wellfound.com/jobs"
+  no_auth: true
+  link_selector: 'a[href*="/jobs/"]'
+  link_pattern: '/jobs/\d+'
+  link_base: "https://wellfound.com"
+  pagination: next-button
+  max_listings: 50
+  filter_hints: "Role and tech filters use typeahead inputs (start typing, pick from dropdown). Job-detail URLs follow /jobs/<numeric-id>-<slug>."
+  fetch_jd: auto
+
+welcome_to_the_jungle:
+  enabled: true
+  base_url: "https://www.welcometothejungle.com/en/jobs"
+  no_auth: true
+  link_selector: 'a[href*="/jobs/"]'
+  link_pattern: '/companies/[^/]+/jobs/[^/]+$'
+  link_base: "https://www.welcometothejungle.com"
+  pagination: next-button
+  max_listings: 50
+  fetch_jd: auto
+
+# --- Auth-walled ---
+
+linkedin:
+  enabled: false
+  base_url: "https://www.linkedin.com/jobs/search/"
+  no_auth: false
+  filter_hints: "Experience level enum: Entry level, Associate, Mid-Senior level, Director, Executive. Date posted: 24 hours / week / month. Remote/Hybrid/On-site under 'Workplace type'."
+
+ycombinator:
+  enabled: false
+  base_url: "https://www.workatastartup.com/companies"
+  no_auth: false
+  filter_hints: "Filters: Role type, Interest, Company stage. Search field at top."
+
+itviec:
+  enabled: false
+  base_url: "https://itviec.com/it-jobs"
+  no_auth: false
+  filter_hints: "Vietnam-only board; filter by Working Arrangement: Remote, location, experience level."

@@ -1,0 +1,37 @@
+# Your job-search criteria — derived from your profile by criteria-deriver.
+# Consumed by /argopia-scan (Stage-1 keyword filter) and /argopia-eval (Stage-2 rubric).
+# Schema: schemas/criteria.schema.yaml
+#
+# - Inline comments tag which values criteria-deriver auto-fills.
+# - Tune anything that doesn't match your actual preferences.
+
+target:
+  domain: default
+  level: []                        # seniority labels — e.g. [Senior, Staff, Lead]; from CV title
+  remote_only: true
+  open_to_relocate: false
+  preferred_timezones: []          # region buckets — [APAC|EMEA|Americas]; from candidate location
+  acceptable_timezones: []         # region buckets — [APAC|EMEA|Americas]; from candidate location
+  excluded_companies: []           # current employer is appended; user adds more
+  max_listing_age_days: 90         # listings older than this are dropped at scan time
+  search_query: null               # typed into board search box at scan time — broad, single term
+                                   # e.g. "speech", "frontend"; precision filtering happens via keywords below
+
+keywords:
+  positive:
+    job_titles: []                 # from CV — at minimum the candidate's current title
+    title_token_sets: []           # list of token-sets — each set AND-matches against title
+                                   # (separator-agnostic). Example:
+                                   # [[research, scientist, speech]] matches "Research Scientist, Speech AI"
+    technical: []                  # concept terms — e.g. "streaming ASR", "RAG"; mined from achievements
+    tools: []                      # named tools — e.g. "Whisper", "PyTorch"; mined from achievements + tech_stack
+  negative: []                     # domain-specific vocabulary collisions; user adds after onboarding
+
+must_haves: []                     # subjective minimums — user adds after onboarding
+                                   # e.g. "English-language work environment", "remote-first culture"
+
+deal_breakers:                     # universal-ish defaults; criteria-deriver appends work-auth conflicts
+  - equity-only or unpaid
+
+nice_to_haves:                     # universal-ish defaults; criteria-deriver appends CV-derived signals
+  - compensation visible in JD or salary range disclosed

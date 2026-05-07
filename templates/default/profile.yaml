@@ -1,0 +1,135 @@
+# Your profile — populated from your CV by profile-extractor.
+# Consumed by criteria-deriver and the /argopia-eval rubric.
+# Schema: schemas/profile.schema.yaml
+#
+# - `null` or `[]` = the CV didn't mention that fact; fill in if you'd like.
+# - List sections show their inner shape in a YAML-comment block below
+#   the field; copy that shape when adding entries.
+
+candidate:
+  name: null
+  current_title: null
+  years_experience: null            # int — total years of experience
+  summary: null                     # 2-4 sentence professional pitch
+
+  contact:
+    email: null
+    phone: null
+    linkedin: null                  # handle only, not full URL
+    github: null                    # handle only
+    twitter: null                   # handle only
+    blog: null                      # full URL — writing/posts
+    portfolio: null                 # full URL — case studies / showcase
+    website: null                   # full URL — personal landing page
+    other_links: []                 # [{label: "ORCID", url: "..."}, ...]
+
+  location:
+    country: null                   # full name, e.g. Vietnam (not VN)
+    city: null
+    timezone: null                  # IANA format, e.g. Asia/Singapore
+
+  languages: []                     # [{language: "English", proficiency: "fluent"}, ...]
+                                    # proficiency: native|fluent|professional|working|conversational|basic
+                                    # optional test_scores: { toeic: 780 }
+
+  work_authorized_in: []            # citizenship + held visas, e.g. [Vietnam, US]
+
+experience: []
+# Each entry shape:
+#   - employer: <string>
+#     title: <string>
+#     start: "YYYY-MM" | "YYYY"
+#     end: "YYYY-MM" | "YYYY" | "present" | null
+#     employment_type: full-time|contract|part-time|freelance|internship | null
+#     team_size_managed: <int> | null     # null for IC roles
+#     achievements: [<string>, ...]
+
+tech_stack: {}
+# Free-form dict of buckets → list of tools/methods.
+# Conventions:
+#   - bucket keys are abbreviations (asr, tts, llm, mlops) or plurals (frameworks, tools)
+#   - use `programming_languages` (not `languages` — that's reserved for human languages)
+# Example:
+#   asr: [Whisper, wav2vec2]
+#   programming_languages: [Python, Go]
+
+education: []
+# Each entry shape:
+#   - institution: <string>
+#     degree: <string> | null
+#     field: <string> | null
+#     minor: <string> | null     # academic minor (secondary field of study)
+#     start: "YYYY-MM" | "YYYY" | null
+#     end: "YYYY-MM" | "YYYY" | "present" | null
+#     gpa: <string> | null         # "3.44/4.0", "First Class Honours", etc.
+#     honors: [<string>, ...]
+#     thesis: <string> | null
+
+projects: []
+# Each entry shape:
+#   - name: <string>
+#     role: <string> | null
+#     start: "YYYY-MM" | "YYYY" | null
+#     end: "YYYY-MM" | "YYYY" | "present" | null
+#     url: <string> | null
+#     achievements: [<string>, ...]
+
+publications: []
+# Each entry shape:
+#   - title: <string>
+#     venue: <string> | null
+#     year: "YYYY" | null
+#     authors: <string> | null     # free-form, comma-separated
+#     url: <string> | null
+#     kind: paper|preprint|book|book_chapter|thesis | null
+#     citations: <int> | null      # only fill if CV explicitly cites a count
+
+patents: []
+# Each entry shape:
+#   - title: <string>
+#     number: <string> | null
+#     year: "YYYY" | null
+#     inventors: <string> | null   # free-form, comma-separated
+#     status: filed|published|granted | null
+#     url: <string> | null
+
+open_source: []
+# Each entry shape:
+#   - name: <string>
+#     role: author|maintainer|core_contributor|contributor | null
+#     description: <string> | null
+#     url: <string> | null
+#     stars: <int> | null
+#     start: "YYYY-MM" | "YYYY" | null
+#     end: "YYYY-MM" | "YYYY" | "present" | null
+
+awards: []
+# Each entry shape:
+#   - name: <string>
+#     year: "YYYY" | "YYYY-YYYY" | null   # accepts ranges
+#     issuer: <string> | null
+#     url: <string> | null
+
+certifications: []
+# Each entry shape:
+#   - name: <string>
+#     issuer: <string> | null
+#     earned: "YYYY-MM" | "YYYY" | null
+#     expires: "YYYY-MM" | "YYYY" | null  # null for non-expiring
+#     url: <string> | null
+
+talks: []
+# Each entry shape:
+#   - title: <string>
+#     venue: <string> | null
+#     year: "YYYY" | null
+#     kind: keynote|conference_talk|workshop|webinar|panel | null
+#     url: <string> | null
+
+volunteering: []
+# Each entry shape:
+#   - organization: <string>
+#     role: <string> | null
+#     start: "YYYY-MM" | "YYYY" | null
+#     end: "YYYY-MM" | "YYYY" | "present" | null
+#     achievements: [<string>, ...]
