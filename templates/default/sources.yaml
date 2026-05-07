@@ -1,132 +1,126 @@
 # Job board catalog — consumed by /argopia-scan.
 # Schema: schemas/sources.schema.yaml
 #
-# Each entry tells the scanner where to look and how to extract listings.
-# Disabled entries (enabled: false) are kept for reference; they re-enable
-# as the corresponding fetch path lands (browser MCP for SPAs, logged-in
-# Browser MCP for auth-walled boards).
+# Each entry declares a `type` discriminator:
+#   api      — JSON API; scan reads array_path + field_map
+#   html     — Static HTML; scan reads link_selector + link_pattern
+#   browser  — SPA / auth-walled; scan delegates to a browser MCP
 #
-# Fields (all entries share the same shape):
-#   enabled        — true: scanner uses this source. false: skipped.
-#   base_url       — landing/search/API page; scanner navigates here first.
-#   no_auth        — true: scanner refuses any redirect to a login page.
-#                    false: auth-walled board (kept for reference, with enabled: false).
-#   link_selector  — CSS selector for JD anchors (HTML/SPA paths only).
-#   link_pattern   — regex an extracted href must match (filters out nav / non-job links).
-#   link_base      — origin prefix used to absolutize relative href values.
-#   pagination     — scroll | next-button | none.
-#   max_listings   — cap per scan; bounds token cost.
-#   filter_hints   — free-form prose for the scan agent (board-specific quirks).
-#   fetch_jd       — auto: WebFetch first, browser MCP fallback if SPA / blocked.
+# Disabled entries (enabled: false) are kept for reference; they re-enable
+# as the corresponding fetch path lands (browser MCP for SPAs / auth-walled,
+# API-key wiring for aggregators).
 
-hn_algolia:
-  enabled: true
-  base_url: "https://hn.algolia.com/api/v1/search?query=Ask+HN+Who+is+hiring&tags=story,author_whoishiring&hitsPerPage=1"
-  no_auth: true
-  pagination: none
-  max_listings: 50
-  fetch_jd: auto
-  filter_hints: "Latest hit is the current Who-Is-Hiring thread; its comments are individual JDs (fetched via /api/v1/items/<id>)."
+# ── JSON API sources ──
 
 remoteok:
-  enabled: true
-  base_url: "https://remoteok.com/"
-  no_auth: true
-  link_selector: 'a[href*="/remote-jobs/"]'
-  link_pattern: '/remote-jobs/.+\d+$'
-  link_base: "https://remoteok.com"
-  pagination: scroll
-  max_listings: 50
-  fetch_jd: auto
-  filter_hints: "Has a JSON API at /api; scan should prefer it over HTML scrape."
+  enabled: false
+  base_url: "https://remoteok.com/api"
+  type: api
+  max_listings: 100
+  skip_first: true
+  field_map:
+    title: position
+    date: date
+    company: company
+    location: location
+  filter_hints: "~99 jobs/call (single response, ~9-day window). URL filter: append ?tags=ml,ai,audio (comma-separated) to base_url for tag-based pre-filter."
 
 remotive:
-  enabled: true
-  base_url: "https://remotive.com/remote-jobs"
-  no_auth: true
-  link_selector: 'a.remotive-url-visit'
-  link_pattern: '/remote-jobs/.+/.+\d+$'
-  link_base: "https://remotive.com"
-  pagination: none
-  max_listings: 50
-  fetch_jd: auto
-  filter_hints: "Has a JSON API at /api/remote-jobs; HTML fallback fields kept for diagnosis."
+  enabled: false
+  base_url: "https://remotive.com/api/remote-jobs"
+  type: api
+  max_listings: 100
+  array_path: jobs
+  field_map:
+    date: publication_date
+    company: company_name
+    location: candidate_required_location
+  filter_hints: "Free /api/remote-jobs serves only ~23 listings (public preview). Full database (~2.6K new/day) is paywalled at $7-29/mo — keep disabled until subscribed."
 
-ai_jobs_net:
+# ── Static HTML sources ──
+
+aijobs_net:
   enabled: true
   base_url: "https://aijobs.net/"
-  no_auth: true
+  type: html
+  max_listings: 100
   link_selector: '#job_list a[href*="/job/"]'
-  link_pattern: '/job/.+\d+/?$'
-  link_base: "https://aijobs.net"
+  link_pattern: '/job/[^/]+\d+/?$'
   pagination: next-button
-  max_listings: 50
-  filter_hints: "No <time> on cards — posted-date is text 'Nd ago'. Search input at top; experience-level and remote toggles in left rail."
-  fetch_jd: auto
+  filter_hints: "50 jobs/page, paginates via ?page=N (2 pages cover max_listings: 100). URL filter: none (UI-only — search input, left-rail toggles). Posted-date shown as 'Nd ago' text (no datetime element)."
+
+aijobs_ai:
+  enabled: true
+  base_url: "https://aijobs.ai/remote"
+  type: html
+  max_listings: 100
+  link_selector: 'a[href*="/job/"]'
+  link_pattern: '/job/[^/]+/?$'
+  pagination: next-button
+  filter_hints: "~21 jobs/page, paginates via ?page=N. URL filter: ?job_type=Full%20Time for FT-only. Distinct platform from ai-jobs.net (both shipped enabled by default)."
 
 himalayas:
   enabled: true
   base_url: "https://himalayas.app/jobs"
-  no_auth: true
-  link_selector: 'a[href*="/jobs/"]'
-  link_pattern: '/jobs/[^/]+/[^/]+$'
-  link_base: "https://himalayas.app"
-  pagination: scroll
-  max_listings: 50
-  fetch_jd: auto
-
-# Disabled — SPA boards that need a stealth browser MCP. Re-enable when
-# browser-MCP support lands.
-huggingface:
-  enabled: false
-  base_url: "https://apply.workable.com/huggingface/"
-  no_auth: true
-  link_selector: 'a[href*="/huggingface/j/"]'
-  link_pattern: '/huggingface/j/[A-Z0-9]+/?$'
-  link_base: "https://apply.workable.com"
-  pagination: scroll
-  max_listings: 50
-  filter_hints: "Workable career portal. Filters in left-rail dropdowns: Department, Location, Workplace type. Search input at top."
-  fetch_jd: auto
-
-wellfound:
-  enabled: false
-  base_url: "https://wellfound.com/jobs"
-  no_auth: true
-  link_selector: 'a[href*="/jobs/"]'
-  link_pattern: '/jobs/\d+'
-  link_base: "https://wellfound.com"
+  type: html
+  max_listings: 100
+  link_selector: 'a[href*="/companies/"][href*="/jobs/"]'
+  link_pattern: '/companies/[^/]+/jobs/[^/]+/?$'
   pagination: next-button
-  max_listings: 50
-  filter_hints: "Heavy anti-bot (Cloudflare). Role/tech filters use typeahead inputs. Job-detail URLs follow /jobs/<numeric-id>-<slug>."
-  fetch_jd: auto
+  filter_hints: "~20 jobs/page, paginates via ?page=N. URL filter: /jobs/<seniority|skill|employment-type> (e.g. /jobs/senior, /jobs/python, /jobs/full-time). Anti-bot: direct HTTP 403s, WebFetch passes."
 
-welcome_to_the_jungle:
+topdev:
   enabled: false
-  base_url: "https://www.welcometothejungle.com/en/jobs"
-  no_auth: true
-  link_selector: 'a[href*="/jobs/"]'
-  link_pattern: '/companies/[^/]+/jobs/[^/]+$'
-  link_base: "https://www.welcometothejungle.com"
+  base_url: "https://topdev.vn/jobs/search"
+  type: html
+  max_listings: 100
+  link_selector: 'a[href*="/detail-jobs/"]'
+  link_pattern: '/detail-jobs/[^/]+-\d+/?$'
   pagination: next-button
-  max_listings: 50
-  fetch_jd: auto
+  filter_hints: "VN-local. URL filter: ?keyword=<term>&page=N. JD URL format: /detail-jobs/<title-slug>-<company-slug>-<numeric-id>. Loose keyword matching (returns UI/UX, QC, content roles alongside AI). VN-employer-skewed (FPT, banks, telecom) — useful as VN-local fallback."
 
-# Disabled — auth-walled boards that need a logged-in Browser MCP session.
-linkedin:
-  enabled: false
-  base_url: "https://www.linkedin.com/jobs/search/"
-  no_auth: false
-  filter_hints: "Experience level enum: Entry level, Associate, Mid-Senior level, Director, Executive. Date posted: 24 hours / week / month. Remote/Hybrid/On-site under 'Workplace type'."
-
-ycombinator:
-  enabled: false
-  base_url: "https://www.workatastartup.com/companies"
-  no_auth: false
-  filter_hints: "Filters: Role type, Interest, Company stage. Search field at top."
+# ── Disabled — SPA boards needing stealth browser MCP ──
 
 itviec:
   enabled: false
-  base_url: "https://itviec.com/it-jobs"
-  no_auth: false
-  filter_hints: "Vietnam-only board; filter by Working Arrangement: Remote, location, experience level."
+  base_url: "https://itviec.com/viec-lam-it"
+  type: browser
+  max_listings: 100
+  link_selector: 'a[href*="job_selected="]'
+  link_pattern: '/viec-lam-it/[^?]+\?job_selected=[^&]+'
+  pagination: next-button
+  filter_hints: "VN-local. URL filter: /viec-lam-it/<role>[/<city>] (e.g. /viec-lam-it/ai-engineer/ha-noi). JD revealed on listing page via ?job_selected=<slug> query (atypical). International remote-friendly employers (CodeLink, Money Forward). Anti-bot: WebFetch 403s, needs stealth browser MCP."
+
+glassdoor:
+  enabled: false
+  base_url: "https://www.glassdoor.com/Job/jobs.htm"
+  type: browser
+  max_listings: 100
+  link_selector: 'a[href*="jobListingId="]'
+  link_pattern: '/partner/jobListing\.htm\?[^"]*jobListingId=\d+'
+  pagination: next-button
+  filter_hints: "URL filter: opaque (/Job/<slug>-jobs-SRCH_IL.0,6_IS<location-id>_KO<offset>,<len>.htm) — browser MCP should drive the UI search form (keyword + location) rather than construct URLs. JD URL format: /partner/jobListing.htm?jobListingId=<numeric-id>. Browsing is public; 'Sign in to apply' gates only the apply action. Anti-bot: WebFetch 403s, needs stealth browser MCP."
+
+# ── Disabled — auth-walled boards (need a logged-in browser session) ──
+
+linkedin:
+  enabled: false
+  base_url: "https://www.linkedin.com/jobs/search/"
+  type: browser
+  requires_login: true
+  max_listings: 100
+  link_selector: 'a[href*="/jobs/view/"]'
+  link_pattern: '/jobs/view/\d+/?'
+  pagination: next-button
+  filter_hints: "URL filter: ?keywords=<term>&location=<loc>&f_E=<level>&f_TPR=<time>&f_WT=<workplace>. Filter IDs: f_E 2-6 (Entry→Executive), f_TPR r86400/r604800/r2592000 (24h/week/month), f_WT 1=On-site, 2=Remote, 3=Hybrid. JD URL format: /jobs/view/<numeric-id>/. Login required for full search depth and Easy Apply; public preview is shallow."
+
+indeed:
+  enabled: false
+  base_url: "https://www.indeed.com/jobs"
+  type: browser
+  requires_login: true
+  max_listings: 100
+  link_selector: 'a[href*="jk="]'
+  link_pattern: '[?&]jk=[a-f0-9]+'
+  pagination: next-button
+  filter_hints: "URL filter: ?q=<term>&l=<location>&start=<offset> (e.g. ?q=ai+engineer&l=Remote&start=10). JD URL format: /rc/clk?jk=<hash> (redirect tracker) → /viewjob?jk=<hash>. Page 1 is publicly accessible; page 2+ redirects to /auth?from=page-two-signin — login required for full coverage. US-skewed on .com (use vn.indeed.com for VN-local). Known issue: scraper spam dilutes results."

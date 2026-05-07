@@ -1,12 +1,14 @@
 # JSON Schema (Draft 2020-12) for working/sources.yaml — where to look.
 #
+# Each entry declares a `type` discriminator that drives scan dispatch:
+#   api      — JSON API.   Scan does HTTP GET, parses JSON via array_path + field_map.
+#   html     — Static HTML. Scan does HTTP GET, scrapes DOM via link_selector + link_pattern.
+#   browser  — SPA / auth.  Scan spawns a browser-MCP subagent to navigate and extract.
+#
 # Conventions:
 #   - One entry per job board (key = source slug).
-#   - Required keys must exist; optional keys may be omitted. `null` keeps shape stable.
-#   - Auth-walled boards stay listed with `enabled: false` so their entry
-#     points aren't lost.
-#   - Defaults below apply to fields each source omits — most sources
-#     specify everything explicitly, but new entries can rely on these.
+#   - Required keys must exist; optional keys default to null / sensible value.
+#   - Disabled sources stay listed (enabled: false) so their config isn't lost.
 
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Argopia sources
@@ -15,21 +17,137 @@ type: object
 additionalProperties:
   type: object
   additionalProperties: false
-  required: [enabled, base_url]
+  required: [enabled, base_url, type]
   properties:
-    enabled:       { type: boolean }
-    base_url:      { type: string, description: "listings page (not a search URL)" }
-    no_auth:       { type: boolean, default: true }
-    link_selector: { type: [string, "null"], default: null, description: "CSS selector for JD-page anchors" }
-    link_pattern:  { type: [string, "null"], default: null, description: "regex on href; non-matches dropped" }
-    link_base:     { type: [string, "null"], default: null, description: "absolute base for resolving relative hrefs" }
+
+    # ── Common to all source types ───────────────────────────────────────────
+    enabled:
+      type: boolean
+      description: "true: scan fetches this source. false: scan skips it (config preserved)."
+
+    base_url:
+      type: string
+      description: "URL scan navigates to first. For type=api this is the endpoint; for type=html/browser this is the listings page."
+
+    type:
+      type: string
+      enum: [api, html, browser]
+      description: |
+        Dispatch discriminator. Tells scan how to fetch + parse:
+          api      Direct HTTP GET (User-Agent: Mozilla/5.0). Parse response as
+                   JSON. Apply array_path → skip_first → max_listings, then map
+                   each item via field_map to {id, title, url, date, company, location}.
+          html     Always use Claude's WebFetch tool (NOT direct HTTP — some
+                   boards 403 plain libraries while WebFetch passes). Parse
+                   the returned content as DOM. Run link_selector, filter
+                   resulting hrefs against link_pattern, absolutize relative
+                   URLs by prepending link_base. Use pagination to advance
+                   until max_listings collected.
+          browser  Spawn a subagent with mcp_server. Hand it base_url +
+                   link_selector + link_pattern + filter_hints + pagination.
+                   Subagent navigates and returns {url, title} pairs.
+
+    requires_login:
+      type: boolean
+      default: false
+      description: "true: source is auth-walled — scan must use a logged-in browser session (cookies/profile). false: scan refuses any redirect to a login page (safety guardrail)."
+
+    max_listings:
+      type: integer
+      default: 100
+      description: "Hard cap on listings returned per scan. Stops pagination/iteration once reached. Bounds token cost downstream."
+
+    filter_hints:
+      type: [string, "null"]
+      default: null
+      description: |
+        Per-source prose read by scan when constructing the fetch URL.
+        Documents URL filter syntax (query params, path segments, or
+        "none" for UI-only), pagination mechanism, JD URL format, and
+        access caveats (anti-bot, login walls, geo restrictions).
+        Free-form since each source's conventions differ — scan
+        interprets it to combine base_url with applicable
+        criteria.target.* fields.
+
+    # ── type: api ────────────────────────────────────────────────────────────
+    array_path:
+      type: [string, "null"]
+      default: null
+      description: |
+        Dot-separated key path locating the listings array within the JSON response.
+          null      Response root IS the array (e.g., RemoteOK returns [...]).
+          "jobs"    Top-level key (e.g., Remotive returns { jobs: [...] }).
+          "data.results"  Nested keys allowed (e.g., { data: { results: [...] } }).
+
+    skip_first:
+      type: boolean
+      default: false
+      description: "true: drop array[0] before processing. Some APIs put metadata/legal-notice in the first element (e.g., RemoteOK). false: process all entries from index 0."
+
+    field_map:
+      type: object
+      additionalProperties: false
+      default: {}
+      description: |
+        Maps the source's JSON object keys → Argopia's canonical names.
+        Each value is a dot-path navigated against the listing object.
+        For example, given { "company": { "display_name": "Acme" } }:
+          field_map.company = "company"               → extracts {display_name:"Acme"}  (the object)
+          field_map.company = "company.display_name"  → extracts "Acme"                 (the string) ✓
+
+        For each listing the agent extracts:
+          normalized.id       = item[field_map.id]       (required)
+          normalized.title    = item[field_map.title]    (required)
+          normalized.url      = item[field_map.url]      (required)
+          normalized.date     = item[field_map.date]     (or null if mapping is null)
+          normalized.company  = item[field_map.company]  (or null)
+          normalized.location = item[field_map.location] (or null)
+        If any path segment is missing on an item, set normalized field to null and continue.
+      properties:
+        id:       { type: string, default: "id",       description: "Source field for stable per-listing ID (used by dedup)." }
+        title:    { type: string, default: "title",    description: "Source field for the role title." }
+        url:      { type: string, default: "url",      description: "Source field for the JD page URL." }
+        date:     { type: [string, "null"], default: null, description: "Source field for posted-date (ISO 8601 if possible). null = source has no date." }
+        company:  { type: [string, "null"], default: null, description: "Source field for hiring company name. null = source has no company field." }
+        location: { type: [string, "null"], default: null, description: "Source field for job location. null = source has no location field." }
+
+    # ── type: html / browser ────────────────────────────────────────────────
+    link_selector:
+      type: [string, "null"]
+      default: null
+      description: "CSS selector run against the page DOM. Each matched <a> element's href becomes a candidate JD URL."
+
+    link_pattern:
+      type: [string, "null"]
+      default: null
+      description: "Regex applied to each candidate href (after extraction). Hrefs that DO NOT match are dropped (filters out nav, footer, non-job links). Use anchors ($, ^) where helpful."
+
+    link_base:
+      type: [string, "null"]
+      default: null
+      description: |
+        Origin prefix for absolutizing relative hrefs.
+          null (default)  Scan derives the origin from base_url
+                          (e.g., 'https://aijobs.net/jobs' → 'https://aijobs.net').
+                          Covers most cases.
+          explicit        Set when the ATS hosts JDs on a DIFFERENT origin than
+                          the listings page (e.g., listings on
+                          careers.company.com → JDs on apply.workable.com/company).
+
     pagination:
       type: string
       enum: [scroll, next-button, none]
-      default: scroll
-    max_listings:  { type: integer, default: 50 }
-    filter_hints:  { type: [string, "null"], default: null }
-    fetch_jd:
+      default: none
+      description: |
+        How to advance after the first page (until max_listings reached):
+          scroll       Trigger infinite-scroll (browser MCP scrolls to page bottom and waits for new listings).
+          next-button  Click "Next" or follow ?page=N+1 query (HTML scrape) until no more.
+          none         Single response is sufficient — don't paginate.
+
+    # ── type: browser only ──────────────────────────────────────────────────
+    mcp_server:
       type: string
-      enum: [auto, webfetch, playwright]
-      default: auto
+      default: playwright
+      description: |
+        Which browser MCP server scan spawns the subagent against. Defaults
+        to playwright; override only if a source needs a different driver.
