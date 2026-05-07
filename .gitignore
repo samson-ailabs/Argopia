@@ -1,0 +1,27 @@
+# ── Build & dependencies ──
+node_modules/
+
+# ── Runtime user data (yours, never commit) ──
+working/
+data/
+reports/
+archives/
+
+# ── OS / editor junk ──
+.DS_Store
+*.log
+
+# ── Secrets ──
+.env
+
+# ── Local Claude Code settings (per-user; settings.json stays shared) ──
+.claude/settings.local.json
+
+# ── MCP server caches ──
+.playwright-mcp/
+.serena/
+
+# ── Personal / local-only ──
+*.pdf
+private/
+local/

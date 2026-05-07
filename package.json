@@ -1,0 +1,39 @@
+{
+  "name": "argopia",
+  "version": "0.1.0",
+  "description": "Job-search automation for engineers using Claude Code — CV in, scored & ranked job leads out. Public boards, no API keys, runs locally.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "author": "Argopia contributors (https://github.com/samson-ailabs/argopia)",
+  "homepage": "https://github.com/samson-ailabs/argopia",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/samson-ailabs/argopia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/samson-ailabs/argopia/issues"
+  },
+  "keywords": [
+    "job-search",
+    "job-hunting",
+    "career",
+    "cv",
+    "resume",
+    "remote-work",
+    "claude-code",
+    "claude-code-plugin",
+    "automation",
+    "playwright-mcp"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.mjs"
+  },
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "js-yaml": "^4.1.0"
+  }
+}
