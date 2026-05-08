@@ -6,19 +6,20 @@
 // Behavior:
 //   1. Validate templates/ exists with the three required YAMLs.
 //   2. Ensure runtime dirs exist: working/, data/{raw,queue}, reports/.
-//   3. Clear working/ (destructive — back up first if edits matter).
-//   4. Copy templates/*.yaml into working/ verbatim, preserving comments
-//      and inline shape documentation.
+//   3. Copy templates/*.yaml into working/ verbatim, overwriting any
+//      existing canonical files (profile/criteria/sources). Other files
+//      in working/ (renamed backups, personal notes) are NOT touched.
 //
 // Templates ship populated — all fields and defaults are baked into the
 // YAMLs themselves. No post-copy processing here.
 
-import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const TEMPLATE_DIR = join(REPO_ROOT, "templates");
+const WORKING_DIR = join(REPO_ROOT, "working");
 
 // Files that get seeded from templates/ into working/.
 const FILES = ["profile.yaml", "criteria.yaml", "sources.yaml"];
@@ -30,27 +31,12 @@ function ensureDirs() {
   }
 }
 
-// True if working/ has any non-dotfile content (so we can note overwrite
-// in the success message).
-function workingHasContent() {
-  const dir = join(REPO_ROOT, "working");
-  if (!existsSync(dir)) return false;
-  return readdirSync(dir).some((n) => !n.startsWith("."));
-}
-
-function clearWorking() {
-  const dir = join(REPO_ROOT, "working");
-  for (const entry of readdirSync(dir)) {
-    rmSync(join(dir, entry), { recursive: true, force: true });
-  }
-}
-
 // Copy a template file to working/ verbatim — preserves the comments
 // and inline shape documentation that both the user and downstream
 // agents rely on as the contract.
 function seedFromTemplate(fileName) {
   const src = join(TEMPLATE_DIR, fileName);
-  const dst = join(REPO_ROOT, "working", fileName);
+  const dst = join(WORKING_DIR, fileName);
   cpSync(src, dst);
 }
 
@@ -68,14 +54,13 @@ function main() {
   validateTemplate();
   ensureDirs();
 
-  const overwrote = workingHasContent();
-  clearWorking();
+  const overwrote = FILES.some((f) => existsSync(join(WORKING_DIR, f)));
 
   for (const f of FILES) seedFromTemplate(f);
 
   console.log(`onboarded: working/ ← templates/`);
   if (overwrote) {
-    console.log(`  note: prior working/ contents were overwritten`);
+    console.log(`  note: prior canonical files were overwritten`);
   }
   console.log(`  files: ${FILES.join(", ")}`);
 }

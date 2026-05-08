@@ -63,19 +63,37 @@ For each agent invocation:
 
 ## Step 1 — Seed working/
 
-Run:
+**Safety check first.** Check if any canonical file already exists in
+`working/`:
+```bash
+ls working/profile.yaml working/criteria.yaml working/sources.yaml 2>/dev/null
 ```
+
+If anything prints, re-onboarding would overwrite the user's edits.
+Ask via the AskUserQuestion tool:
+- **Rename existing** — rename each canonical to `{name}-<timestamp>.yaml` (kept alongside the fresh seeds in `working/` for easy diffing).
+- **Overwrite** — replace canonicals directly (no backup).
+- **Cancel** — stop without changes.
+
+If the user picks **Rename existing**:
+```bash
+TS=$(date -u +%Y-%m-%dT%H%M)
+for f in profile criteria sources; do
+  [ -f "working/$f.yaml" ] && mv "working/$f.yaml" "working/$f-$TS.yaml"
+done
+```
+Then proceed to seed.
+
+If the user picks **Cancel**, STOP.
+
+Otherwise (**Overwrite**, or no canonical file exists), seed:
+```bash
 node scripts/onboard.mjs
 ```
 
-This **overwrites** `working/` (drops any prior files) and copies the
-three template files from `templates/` verbatim, preserving comments
-and inline shape documentation. Template defaults are baked into the
-YAML files themselves — no synthesis at copy-time.
-
-**Re-onboarding is destructive.** If the user has custom edits in
-`working/` they want to keep, advise them to back up first
-(`cp -r working/ working-bak/`).
+This copies the three template files from `templates/` into `working/`
+verbatim, preserving comments and inline shape documentation. Other
+files in `working/` (renamed backups, personal notes) are untouched.
 
 If the script errors that `templates/` is missing or incomplete, the
 clone is broken — surface the error and stop.
