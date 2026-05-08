@@ -65,12 +65,16 @@ additionalProperties:
       type: [string, "null"]
       default: null
       description: |
-        Per-source prose documenting the source's URL filter syntax
-        (query params, path segments, or "none" for UI-only),
-        pagination mechanism, JD URL format, and access caveats
-        (anti-bot, login walls, geo restrictions). Free-form since
-        each source's conventions differ. Used to construct fetch
-        URLs by combining base_url with applicable filter parameters.
+        Per-source prose. Recommended order:
+          1. Pagination — e.g. "50 jobs/page, paginates via ?page=N"
+                          or "single response, ~99 jobs/call"
+          2. URL filter — e.g. "URL filter: ?q=<term>" or "URL filter: none"
+          3. JD URL format — e.g. "JD URL format: /job/<title-slug>"
+          4. Caveats (optional) — anti-bot, login walls, data quirks
+
+        Free-form prose since each source's conventions differ. Used
+        to construct fetch URLs by combining base_url with applicable
+        filter parameters.
 
     # ── type: api ────────────────────────────────────────────────────────────
     array_path:

@@ -24,7 +24,7 @@ remoteok:
     date: date
     company: company
     location: location
-  filter_hints: "~99 jobs/call (single response, ~9-day window). URL filter: append ?tags=ml,ai,audio (comma-separated) to base_url for tag-based pre-filter."
+  filter_hints: "Single response, ~99 jobs/call (~9-day window). URL filter: ?tags=ml,ai,audio (comma-separated) for tag-based pre-filter. JD URL format: /remote-jobs/<title-slug>-<company-slug>-<numeric-id>."
 
 remotive:
   enabled: false
@@ -36,7 +36,7 @@ remotive:
     date: publication_date
     company: company_name
     location: candidate_required_location
-  filter_hints: "Free /api/remote-jobs serves only ~23 listings (public preview). Full database (~2.6K new/day) is paywalled at $7-29/mo — keep disabled until subscribed."
+  filter_hints: "Single response, ~23 listings on free tier (public preview); full database (~2.6K new/day) is paywalled at $7-29/mo. URL filter: limited on free tier (?category=, ?company=, ?search=). JD URL format: source-provided in JSON `url` field. Caveat: paywall — keep disabled until subscribed."
 
 # ── Static HTML sources ──
 
@@ -48,7 +48,7 @@ aijobs_net:
   link_selector: '#job_list a[href*="/job/"]'
   link_pattern: '/job/[^/]+\d+/?$'
   pagination: next-button
-  filter_hints: "50 jobs/page, paginates via ?page=N (2 pages cover max_listings: 100). URL filter: none (UI-only — search input, left-rail toggles). Posted-date shown as 'Nd ago' text (no datetime element)."
+  filter_hints: "50 jobs/page, paginates via ?page=N. URL filter: none — UI-only via structured dropdowns; ?q= is ignored. JD URL format: /job/<title-slug>-<numeric-id>/. Posted-date shown as 'Nd ago' text (no datetime element)."
 
 aijobs_ai:
   enabled: true
@@ -58,17 +58,17 @@ aijobs_ai:
   link_selector: 'a[href*="/job/"]'
   link_pattern: '/job/[^/]+/?$'
   pagination: next-button
-  filter_hints: "~21 jobs/page, paginates via ?page=N. URL filter: ?job_type=Full%20Time for FT-only. Distinct platform from ai-jobs.net (both shipped enabled by default)."
+  filter_hints: "~21 jobs/page, paginates via ?page=N. URL filters: ?keyword=<term> for free-text search; ?job_type=Full%20Time for FT-only. JD URL format: /job/<title-slug>."
 
 himalayas:
   enabled: true
-  base_url: "https://himalayas.app/jobs"
+  base_url: "https://himalayas.app/jobs/worldwide"
   type: html
   max_listings: 100
   link_selector: 'a[href*="/companies/"][href*="/jobs/"]'
   link_pattern: '/companies/[^/]+/jobs/[^/]+/?$'
   pagination: next-button
-  filter_hints: "~20 jobs/page, paginates via ?page=N. URL filter: /jobs/<seniority|skill|employment-type> (e.g. /jobs/senior, /jobs/python, /jobs/full-time). Anti-bot: direct HTTP 403s, WebFetch passes."
+  filter_hints: "~20 jobs/page, paginates via ?page=N. URL filter: ?q=<term> for free-text search. JD URL format: /companies/<company-slug>/jobs/<title-slug>. Anti-bot: direct HTTP 403s, WebFetch passes."
 
 topdev:
   enabled: false
@@ -78,7 +78,7 @@ topdev:
   link_selector: 'a[href*="/detail-jobs/"]'
   link_pattern: '/detail-jobs/[^/]+-\d+/?$'
   pagination: next-button
-  filter_hints: "VN-local. URL filter: ?keyword=<term>&page=N. JD URL format: /detail-jobs/<title-slug>-<company-slug>-<numeric-id>. Loose keyword matching (returns UI/UX, QC, content roles alongside AI). VN-employer-skewed (FPT, banks, telecom) — useful as VN-local fallback."
+  filter_hints: "~10-15 jobs/page, paginates via &page=N. URL filter: ?keyword=<term> for free-text search. JD URL format: /detail-jobs/<title-slug>-<company-slug>-<numeric-id>. Caveat: VN-local market with loose keyword matching (returns UI/UX, QC, content roles alongside AI); VN-employer-skewed (FPT, banks, telecom)."
 
 # ── Disabled — SPA boards needing stealth browser MCP ──
 
@@ -90,7 +90,7 @@ itviec:
   link_selector: 'a[href*="job_selected="]'
   link_pattern: '/viec-lam-it/[^?]+\?job_selected=[^&]+'
   pagination: next-button
-  filter_hints: "VN-local. URL filter: /viec-lam-it/<role>[/<city>] (e.g. /viec-lam-it/ai-engineer/ha-noi). JD revealed on listing page via ?job_selected=<slug> query (atypical). International remote-friendly employers (CodeLink, Money Forward). Anti-bot: WebFetch 403s, needs stealth browser MCP."
+  filter_hints: "Pagination unverified (anti-bot blocks WebFetch). URL filter: /viec-lam-it/<role>[/<city>] (e.g. /viec-lam-it/ai-engineer/ha-noi). JD URL format: <listing-path>?job_selected=<slug> (revealed on listing page; atypical). Caveats: VN-local with international remote-friendly employers (CodeLink, Money Forward); anti-bot WebFetch 403s, needs stealth browser MCP."
 
 glassdoor:
   enabled: false
@@ -100,7 +100,7 @@ glassdoor:
   link_selector: 'a[href*="jobListingId="]'
   link_pattern: '/partner/jobListing\.htm\?[^"]*jobListingId=\d+'
   pagination: next-button
-  filter_hints: "URL filter: opaque (/Job/<slug>-jobs-SRCH_IL.0,6_IS<location-id>_KO<offset>,<len>.htm) — browser MCP should drive the UI search form (keyword + location) rather than construct URLs. JD URL format: /partner/jobListing.htm?jobListingId=<numeric-id>. Browsing is public; 'Sign in to apply' gates only the apply action. Anti-bot: WebFetch 403s, needs stealth browser MCP."
+  filter_hints: "Pagination unverified (anti-bot blocks WebFetch). URL filter: opaque (/Job/<slug>-jobs-SRCH_IL.0,6_IS<location-id>_KO<offset>,<len>.htm) — drive UI search form rather than construct URLs. JD URL format: /partner/jobListing.htm?jobListingId=<numeric-id>. Caveats: browsing is public, 'Sign in to apply' gates apply action; anti-bot WebFetch 403s, needs stealth browser MCP."
 
 # ── Disabled — auth-walled boards (need a logged-in browser session) ──
 
@@ -113,7 +113,7 @@ linkedin:
   link_selector: 'a[href*="/jobs/view/"]'
   link_pattern: '/jobs/view/\d+/?'
   pagination: next-button
-  filter_hints: "URL filter: ?keywords=<term>&location=<loc>&f_E=<level>&f_TPR=<time>&f_WT=<workplace>. Filter IDs: f_E 2-6 (Entry→Executive), f_TPR r86400/r604800/r2592000 (24h/week/month), f_WT 1=On-site, 2=Remote, 3=Hybrid. JD URL format: /jobs/view/<numeric-id>/. Login required for full search depth and Easy Apply; public preview is shallow."
+  filter_hints: "~25 jobs/page, paginates via &start=<offset> (multiples of 25). URL filter: ?keywords=<term>&location=<loc>&f_E=<level>&f_TPR=<time>&f_WT=<workplace>. Filter IDs: f_E 2-6 (Entry→Executive), f_TPR r86400/r604800/r2592000 (24h/week/month), f_WT 1=On-site, 2=Remote, 3=Hybrid. JD URL format: /jobs/view/<numeric-id>/. Caveat: login required for full search depth and Easy Apply; public preview is shallow."
 
 indeed:
   enabled: false
@@ -124,4 +124,4 @@ indeed:
   link_selector: 'a[href*="jk="]'
   link_pattern: '[?&]jk=[a-f0-9]+'
   pagination: next-button
-  filter_hints: "URL filter: ?q=<term>&l=<location>&start=<offset> (e.g. ?q=ai+engineer&l=Remote&start=10). JD URL format: /rc/clk?jk=<hash> (redirect tracker) → /viewjob?jk=<hash>. Page 1 is publicly accessible; page 2+ redirects to /auth?from=page-two-signin — login required for full coverage. US-skewed on .com (use vn.indeed.com for VN-local). Known issue: scraper spam dilutes results."
+  filter_hints: "~10-15 jobs/page, paginates via &start=<offset> (multiples of 10). URL filter: ?q=<term>&l=<location>. JD URL format: /rc/clk?jk=<hash> (redirect tracker) → /viewjob?jk=<hash>. Caveats: page 1 publicly accessible, page 2+ redirects to /auth?from=page-two-signin (login required for full coverage); US-skewed on .com (use vn.indeed.com for VN-local); scraper spam dilutes results."
