@@ -6,27 +6,21 @@
 //   node scripts/onboard.mjs --list-domains
 //   node scripts/onboard.mjs --dry-run <domain>
 //
-// Behavior:
+// Default behavior (node scripts/onboard.mjs <domain>):
 //   1. Validate templates/<domain>/ exists with the three required YAMLs.
-//   2. Clear working/ (drops any prior files).
-//      WARNING: this is destructive — back up working/ first if you have
-//      custom edits you want to keep.
-//   3. Copy templates/<domain>/*.yaml into working/ verbatim, preserving
+//   2. Ensure runtime dirs exist: working/, data/{raw,queue}, reports/.
+//   3. Clear working/ (destructive — back up first if edits matter).
+//   4. Copy templates/<domain>/*.yaml into working/ verbatim, preserving
 //      comments and inline shape documentation.
-//   4. Write data/active-domain.txt with the new domain name.
+//
+// Modes:
+//   --list-domains      list available template names; exit.
+//   --dry-run <domain>  validate template and print would-do; no writes.
 //
 // Templates ship populated — all fields and defaults are baked into the
-// YAMLs themselves. No post-copy processing here; schema validation runs
-// inline as Step 0 of /argopia-scan.
+// YAMLs themselves. No post-copy processing here.
 
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { resolve, join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -131,8 +125,6 @@ function main() {
 
   for (const f of FILES) seedFromTemplate(domain, f);
 
-  writeFileSync(join(REPO_ROOT, "data", "active-domain.txt"), `${domain}\n`);
-
   console.log(`onboarded: working/ ← templates/${domain}/`);
   if (overwrote) {
     console.log(`  note: prior working/ contents were overwritten`);
@@ -143,6 +135,6 @@ function main() {
 try {
   main();
 } catch (err) {
-  console.error(`onboard error: ${err.message}`);
+  console.error(`onboard: ${err.message}`);
   process.exit(1);
 }

@@ -20,7 +20,6 @@ will never overwrite these.
 | `data/seen.jsonl` | URLs you've already encountered (dedup state) |
 | `data/raw/*.jsonl` | Per-scan raw fetches |
 | `data/queue/*.txt` | Per-scan filtered URL queues |
-| `data/active-domain.txt` | Pointer to your active domain template |
 | `reports/tracker.md` | Your central application tracker |
 | `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD evaluation reports |
 | `reports/insights/<YYYY-MM-DD>.md` | On-demand market insights |

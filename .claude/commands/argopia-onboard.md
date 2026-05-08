@@ -167,8 +167,7 @@ user's working file, not hardcoded names.
 2. *(Optional)* Tweak `working/sources.yaml` if you want to toggle
    boards or adjust `max_listings`.
 
-3. Run `/argopia-scan` when satisfied (it validates `working/` against
-   the schemas as Step 0 and refuses if anything is malformed).
+3. Run `/argopia-scan` when satisfied.
 ```
 
 ## Token discipline
