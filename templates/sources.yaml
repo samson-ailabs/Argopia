@@ -1,14 +1,15 @@
-# Job board catalog — consumed by /argopia-scan.
+# Job board catalog — what to crawl.
 # Schema: schemas/sources.schema.yaml
 #
-# Each entry declares a `type` discriminator:
-#   api      — JSON API; scan reads array_path + field_map
-#   html     — Static HTML; scan reads link_selector + link_pattern
-#   browser  — SPA / auth-walled; scan delegates to a browser MCP
+# Each entry declares a `type` discriminator that determines how its
+# listings are fetched:
+#   api      — JSON API endpoint; parsed via array_path + field_map.
+#   html     — Static HTML listings; scraped via link_selector + link_pattern.
+#   browser  — SPA / auth-walled; navigated via a browser MCP session.
 #
-# Disabled entries (enabled: false) are kept for reference; they re-enable
-# as the corresponding fetch path lands (browser MCP for SPAs / auth-walled,
-# API-key wiring for aggregators).
+# Disabled entries (enabled: false) are kept for reference; they
+# re-enable as the corresponding fetch path becomes available
+# (browser MCP for SPAs / auth-walled, API-key wiring for aggregators).
 
 # ── JSON API sources ──
 

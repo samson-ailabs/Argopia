@@ -1,11 +1,25 @@
-# JSON Schema (Draft 2020-12) for working/criteria.yaml — candidate preferences.
+# JSON Schema (Draft 2020-12) for working/criteria.yaml — what the
+# candidate is looking for + the matching rules.
+#
+# Three concerns, in order of granularity:
+#   target    — coarse preferences (region, level, age, remote_only) and
+#               broad search terms (search_queries) the candidate uses to
+#               find candidate listings.
+#   keywords  — fine-grained matching rules. positive sub-lists OR-match
+#               (any hit qualifies a listing); negative AND-NOT-matches
+#               (any hit drops a listing).
+#   must_haves / deal_breakers / nice_to_haves
+#             — free-form prose statements describing role-level
+#               requirements. must_haves are soft minimums, deal_breakers
+#               are hard rejects, nice_to_haves are bonus signals.
 #
 # Conventions:
-#   - Required keys must exist; optional keys may be omitted. `null` / `[]` keeps shape stable.
-#   - keywords.positive is OR-matched (any hit qualifies a listing).
-#   - keywords.negative is AND-NOT-matched (any hit drops a listing).
-#   - Defaults below are universal user preferences applied on top of the
-#     domain template's curated keyword/deal-breaker baseline.
+#   - Required keys must exist; optional keys may be omitted. null / []
+#     keep shape stable.
+#   - All string matching is case-insensitive.
+#   - All free-form prose fields (must_haves, deal_breakers,
+#     nice_to_haves) capture intent in plain English; precise enforcement
+#     is up to whatever consumes them.
 
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Argopia criteria
@@ -15,37 +29,105 @@ additionalProperties: false
 required: [target, keywords]
 
 properties:
+  # ── target: coarse preferences ──────────────────────────────────────────
   target:
     type: object
     additionalProperties: false
-    required: [domain]
+    description: |
+      Coarse preferences shaping which jobs are even worth looking at:
+      region, seniority, age, broad search terms, blacklisted companies.
     properties:
-      domain:               { type: [string, "null"], default: null }
-      level:                { type: array, items: { type: string }, default: [] }
-      remote_only:          { type: boolean, default: true }
-      open_to_relocate:     { type: boolean, default: false }
-      preferred_timezones:  { type: array, items: { type: string }, default: [] }
-      acceptable_timezones: { type: array, items: { type: string }, default: [] }
-      excluded_companies:   { type: array, items: { type: string }, default: [] }
-      max_listing_age_days: { type: integer, default: 90 }
-      search_query:         { type: [string, "null"], default: null }
+      level:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Seniority labels the candidate is targeting — e.g. [Senior,
+          Staff, Lead, Principal]. Implies titles below the lowest level
+          (junior, intern, trainee, entry-level) are out of scope.
 
+      remote_only:
+        type: boolean
+        default: true
+        description: "true: candidate accepts only fully-remote roles. false: on-site / hybrid roles also acceptable."
+
+      open_to_relocate:
+        type: boolean
+        default: false
+        description: "true: candidate is open to relocating outside their preferred/acceptable timezones. false: region match is a hard requirement."
+
+      preferred_timezones:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Region buckets the candidate prefers, in priority order — e.g.
+          [APAC, EMEA]. Tokens are informal region names (APAC, EMEA,
+          Americas) used as substring match against listing locations.
+
+      acceptable_timezones:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Region buckets the candidate accepts as fallback. Same shape
+          and semantics as preferred_timezones; split for human
+          readability.
+
+      excluded_companies:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Companies the candidate does not want to apply to. Substring
+          match, case-insensitive — "google" matches "Google LLC".
+
+      max_listing_age_days:
+        type: integer
+        default: 90
+        description: "Listings posted older than this many days are out of scope."
+
+      search_queries:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Broad search terms typed verbatim into board search inputs to
+          fetch candidate listings. Keep broad (1-3 words each); the
+          keyword rules below handle precision. Example:
+          ["ai engineer", "machine learning"] for an ML candidate.
+
+  # ── keywords: matching rules ─────────────────────────────────────────────
   keywords:
     type: object
     additionalProperties: false
     required: [positive, negative]
+    description: |
+      Keyword matching rules applied to listing title + JD body.
+      positive sub-lists OR-match (any sub-list hit qualifies the
+      listing). negative AND-NOT-matches (any hit drops the listing).
     properties:
       positive:
         type: object
         additionalProperties: false
         required: [job_titles]
+        description: |
+          A listing qualifies if ANY sub-list matches. Four buckets,
+          distinguished by what they match against and how:
+            job_titles       — substring vs title only.
+            title_token_sets — AND-of-tokens vs title only (separator-agnostic).
+            technical        — substring vs title + first 800 chars of body.
+            tools            — substring vs title + first 800 chars of body.
         properties:
           job_titles:
             type: array
             items: { type: string }
             default: []
-          technical: { type: array, items: { type: string }, default: [] }
-          tools:     { type: array, items: { type: string }, default: [] }
+            description: |
+              Role title patterns matched against the listing title
+              (substring, lowercased). Examples: ["Senior AI Engineer",
+              "Staff ML Engineer", "Lead Frontend Engineer"].
+
           title_token_sets:
             type: array
             default: []
@@ -53,8 +135,71 @@ properties:
               type: array
               items: { type: string }
               minItems: 2
-      negative: { type: array, items: { type: string }, default: [] }
+            description: |
+              Each inner array is a token set; ALL tokens must appear in
+              the title (word-boundary, separator-agnostic). Lets
+              "Research Scientist, Speech AI" match
+              [research, scientist, speech] without caring about commas
+              or word order. Use when substring matching against
+              job_titles is too brittle (titles split across multiple
+              words).
 
-  must_haves:    { type: array, items: { type: string }, default: [] }
-  deal_breakers: { type: array, items: { type: string }, default: [] }
-  nice_to_haves: { type: array, items: { type: string }, default: [] }
+          technical:
+            type: array
+            items: { type: string }
+            default: []
+            description: |
+              Concept-level technical terms — e.g. ["streaming ASR",
+              "RAG", "microservice architecture", "accessibility"].
+              Avoid generic terms (Python, Docker, Linux) that appear
+              in nearly every JD.
+
+          tools:
+            type: array
+            items: { type: string }
+            default: []
+            description: |
+              Named tools, libraries, platforms — e.g. ["Whisper",
+              "PyTorch", "React", "PostgreSQL", "Pipecat"].
+
+      negative:
+        type: array
+        items: { type: string }
+        default: []
+        description: |
+          Vocabulary-collision drops. Any hit rejects the listing.
+          Use for terms in the candidate's domain that mean something
+          different in another context. Examples for a voice-AI
+          candidate: ["voice actor", "speech therapy", "VoIP", "sound
+          design"]. Don't use for general avoidances (location,
+          compensation, quality concerns) — those belong in
+          deal_breakers.
+
+  # ── role-level requirements (free-form prose) ────────────────────────────
+  must_haves:
+    type: array
+    items: { type: string }
+    default: []
+    description: |
+      Subjective minimum requirements the candidate wants in a role.
+      Soft requirements — a role missing one is less attractive but
+      not necessarily disqualified. Examples: "English-language work
+      environment", "remote-first culture", "publication-friendly".
+
+  deal_breakers:
+    type: array
+    items: { type: string }
+    default: []
+    description: |
+      Hard requirements — a role is unacceptable if any are violated.
+      Examples: "US work authorization required", "equity-only or
+      unpaid", "on-site only in San Francisco".
+
+  nice_to_haves:
+    type: array
+    items: { type: string }
+    default: []
+    description: |
+      Bonus signals the candidate values but doesn't require.
+      Examples: "open-source culture / OSS contributions encouraged",
+      "publication-friendly culture", "team leadership opportunity".

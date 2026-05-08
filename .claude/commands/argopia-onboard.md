@@ -13,6 +13,9 @@ subagents that populate `working/` from the user's CV:
 `working/sources.yaml` ships preset; the orchestrator does not modify
 it (the user is welcome to edit it later).
 
+`working/` file shapes are defined by `schemas/{profile,criteria,sources}.schema.yaml`.
+The agents follow them as the source of truth.
+
 Keep this command **thin** — substantive prompts live in the agent
 files, not here. Your context only holds the orchestration plan + each
 agent's JSON status report.
@@ -23,7 +26,7 @@ The argument is: $ARGUMENTS
 
 ```
 Step 0  validate $ARGUMENTS
-Step 1  seed working/ from templates/default/
+Step 1  seed working/ from templates/
 Step 2  spawn profile-extractor → working/profile.yaml
 Step 3  spawn criteria-deriver  → working/criteria.yaml
 Step 4  print review checklist
@@ -60,26 +63,22 @@ For each agent invocation:
 
 ## Step 1 — Seed working/
 
-Always use `templates/default/` — the domain-agnostic shipped
-scaffold. (Power users wanting curated domain keywords can swap in a
-custom template manually after onboarding.)
-
 Run:
 ```
-node scripts/onboard.mjs default
+node scripts/onboard.mjs
 ```
 
 This **overwrites** `working/` (drops any prior files) and copies the
-three template files in verbatim, preserving comments and inline shape
-documentation. Template defaults are baked into the YAML files
-themselves — no synthesis at copy-time.
+three template files from `templates/` verbatim, preserving comments
+and inline shape documentation. Template defaults are baked into the
+YAML files themselves — no synthesis at copy-time.
 
 **Re-onboarding is destructive.** If the user has custom edits in
 `working/` they want to keep, advise them to back up first
 (`cp -r working/ working-bak/`).
 
-If the script errors that `templates/default/` is missing, the clone
-is incomplete — surface the error and stop.
+If the script errors that `templates/` is missing or incomplete, the
+clone is broken — surface the error and stop.
 
 ## Step 2 — Spawn profile-extractor
 
@@ -100,7 +99,7 @@ Apply the dispatch protocol with:
 | Parameter             | Value                                                                       |
 |-----------------------|-----------------------------------------------------------------------------|
 | Agent file            | `agents/criteria-deriver.md`                                                |
-| Inputs                | `domain: default`                                                           |
+| Inputs                | (none)                                                                      |
 | Description           | `"Argopia criteria-deriver"`                                                |
 | On `status != "ok"`   | Surface the failure but **don't roll back** — user can re-run manually.     |
 | Keep for checklist    | `auto_filled` map                                                           |
@@ -125,7 +124,7 @@ user's working file, not hardcoded names.
 **Output template:**
 
 ```
-**✓ Onboarded** with the default template
+**✓ Onboarded**
 
 **Profile** *(extracted from your CV)*
   ▸ **Filled:** <comma-sep section names from profile-extractor's `filled_sections`>
@@ -139,7 +138,7 @@ user's working file, not hardcoded names.
 **Criteria** *(derived from your profile)*
 
   **Auto-filled** — please review and adjust:
-    ✓ `search_query`: <value>
+    ✓ `search_queries`: <list of values>
     ✓ `target.level`: <list> *(current title: <CV current_title>)*
     ✓ `timezones`: preferred <[REGION]>, acceptable <[REGION]> *(<candidate.location.country>)*
     ✓ `excluded_companies`: added <"company name(s)"> *(your current employer)*

@@ -35,7 +35,7 @@ will replace these with newer versions.
 | Path | Purpose |
 |------|---------|
 | `schemas/*.schema.yaml` | Validation contracts for `working/*.yaml` |
-| `templates/<domain>/*.yaml` | Starter templates (`default` ships; add your own per-domain) |
+| `templates/*.yaml` | Starter templates copied into `working/` during onboarding |
 | `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, filter, dedup, status) |
 | `.claude/commands/*.md` | Slash command definitions |
 | `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
@@ -74,20 +74,18 @@ non-conflicting changes automatically.
 
 ## Templates as a special case
 
-`templates/<domain>/*.yaml` is system layer. The customization workflow
-is:
+`templates/*.yaml` is system layer. The customization workflow is:
 
 ```
-templates/<domain>/      → system (ships with Argopia, gets updated)
+templates/               → system (ships with Argopia, gets updated)
         ↓ (copied by /argopia-onboard)
 working/                 → user (yours; updates never touch this)
 ```
 
-If you customize `templates/default/criteria.yaml` directly, your
-edits get clobbered on next update. Always edit `working/criteria.yaml`
-instead.
+If you customize `templates/criteria.yaml` directly, your edits get
+clobbered on next update. Always edit `working/criteria.yaml` instead.
 
 The exception: if you're **contributing** an improvement to the
-default template that should benefit everyone (e.g. better baseline
-keyword coverage), edit `templates/default/criteria.yaml` and submit a
-PR. Your local `working/` stays untouched either way.
+template that should benefit everyone (e.g. better baseline keyword
+coverage), edit `templates/criteria.yaml` and submit a PR. Your local
+`working/` stays untouched either way.

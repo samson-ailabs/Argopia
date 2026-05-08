@@ -33,7 +33,7 @@ application itself, not the search.
 $ /argopia-onboard ./my-cv.pdf
 ✓ Onboarded with the default template
 Profile (extracted from your CV): candidate, experience, education...
-Criteria (derived from your profile): search_query, target.level, ...
+Criteria (derived from your profile): search_queries, target.level, ...
 
 $ /argopia-scan
 $ /argopia-eval --top 10
@@ -86,7 +86,7 @@ That's it. The onboard command guides you through review and the rest of the pip
 
 ## Configuration
 
-Three files in `working/`, three matching files in `templates/<domain>/`. Each owns one concern:
+Three files in `working/`, three matching files in `templates/`. Each owns one concern:
 
 | File             | Role                                              | Edited by                    |
 |------------------|---------------------------------------------------|------------------------------|
@@ -97,14 +97,15 @@ Three files in `working/`, three matching files in `templates/<domain>/`. Each o
 The Stage-2 scoring rubric lives **inside** `/argopia-eval` — not as a
 separate file the user maintains.
 
-## Adding your own domain
+## Customizing the template
 
-1. Copy `templates/default/` to `templates/<your-domain>/`.
-2. Edit the three files for your tech / role / region.
-3. After onboarding, swap in: `cp templates/<your-domain>/criteria.yaml working/criteria.yaml`.
+The three files in `templates/` are starter scaffolds. Edit them for
+your tech / role / region preferences before running `/argopia-onboard`,
+or edit the copies in `working/` after onboarding (your `working/`
+edits are gitignored and never overwritten by updates).
 
-No code changes required. If you find yourself reaching into `scripts/` to
-make a new domain work, that's a bug — open an issue.
+No code changes required. If you find yourself reaching into `scripts/`
+to customize, that's a bug — open an issue.
 
 ## What's free / what's used
 
@@ -122,14 +123,13 @@ ownership table.
 
 ## Status & roadmap
 
-**v0.1.0 — public alpha.** Onboarding flow, default template, schemas,
-and the full pipeline work end-to-end across the curated boards shipped
-in `templates/default/sources.yaml`. Plugin packaging in place but not
-yet listed on the Claude Code marketplace.
+**v0.1.0 — public alpha.** Onboarding flow, schemas, and the full
+pipeline work end-to-end across the curated boards shipped in
+`templates/sources.yaml`. Plugin packaging in place but not yet listed
+on the Claude Code marketplace.
 
 What's next: more board coverage (SPA-rendered + auth-walled boards via
-browser MCP), additional domain templates (frontend, backend, ML
-research), and optional auto-update.
+browser MCP) and optional auto-update.
 
 ## What it doesn't do (yet)
 

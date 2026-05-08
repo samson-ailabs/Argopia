@@ -20,7 +20,7 @@ User-layer vs system-layer file ownership is documented in
 | Question | Authoritative source |
 |---|---|
 | "What's the contract for X?" | `schemas/<X>.schema.yaml` |
-| "What does populated X look like?" | `templates/default/<X>.yaml` |
+| "What does populated X look like?" | `templates/<X>.yaml` |
 | "How does X get filled or used?" | `.claude/commands/argopia-<verb>.md` |
 | "What does the user see?" | `README.md` |
 | "What's the rubric?" | `.claude/commands/argopia-eval.md` (inlined) |
@@ -30,10 +30,10 @@ User-layer vs system-layer file ownership is documented in
 
 ## The two-stage model — load-bearing contract
 
-| Stage | Who | Does | Cost |
-|---|---|---|---|
-| 1 — Aggregate + filter | Node | fetch JSONL, regex/substring match, dedup | $0 |
-| 2 — Score JDs | Claude | read profile + criteria + JD, apply rubric | tokens |
+| Stage | Who | Does | Optimizes for | Cost |
+|---|---|---|---|---|
+| 1 — Aggregate | Node + WebFetch | source pre-filter via URL params (`criteria.target.*`), fetch listings, dedup against seen.jsonl | **recall** | $0 |
+| 2 — Judge | Claude | fetch JD body, apply keyword filter (body-aware) + rubric, write report, mark seen | **precision** | tokens |
 
 **Claude reasons. Node enforces fixed logic.** When unsure where
 something belongs:
@@ -49,10 +49,10 @@ something belongs:
 .claude/commands/    user-facing slash commands (entry surface)
 agents/              reusable subagent prompts (profile-extractor, criteria-deriver)
 schemas/             3 validation contracts (profile, criteria, sources)
-templates/<domain>/  starter library; `default` is the shipped domain-agnostic scaffold
+templates/           starter scaffolds copied to working/ during onboarding
 scripts/             single-file Node helpers (.mjs)
 working/             3 user-editable files after /argopia-onboard (gitignored)
-data/                runtime state — seen.jsonl, queue/, raw/, active-domain.txt
+data/                runtime state — seen.jsonl, queue/, raw/
 reports/             per-JD markdown + tracker.md + insights/
 ```
 
@@ -72,10 +72,11 @@ The Stage-2 scoring **rubric is inlined in
 1. `/argopia-onboard <cv-path>` — parse CV, copy template to `working/`,
    derive `profile.yaml` + parts of `criteria.yaml` from CV
 2. *(user manually reviews `working/*.yaml`)*
-3. `/argopia-scan [<url> ...]` — validates config (schema check), then
-   dispatches each enabled source by its `type` (api → Node fetch, html →
-   WebFetch, browser → browser-MCP subagent); filters; dedupes; writes
-   queue. With URL args: inject directly into queue (Mode B).
+3. `/argopia-scan [<url> ...]` — for each enabled source, construct
+   pre-filter URL from `criteria.target.*`, dispatch by `type` (api →
+   Node fetch, html → WebFetch, browser → browser-MCP subagent), dedupe
+   read-only against `seen.jsonl`, write queue. With URL args: inject
+   directly into queue (Mode B).
 4. `/argopia-eval [--top N | --all]` — for each queued URL: fetch JD,
    score against profile + criteria via inlined rubric, write report +
    tracker row.
@@ -86,44 +87,60 @@ The Stage-2 scoring **rubric is inlined in
 Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
 
-`/argopia-scan` validates `working/*.yaml` against schemas as Step 0
-and refuses if anything is malformed.
-
 ## Scripts (Node, deterministic)
 
-| Script | Reads | Writes |
-|---|---|---|
-| `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL |
-| `dedup.mjs` | `data/seen.jsonl` + stdin JSONL | stdout new URLs only |
-| `onboard.mjs` | `templates/<domain>/` | `working/`, `data/active-domain.txt` |
-| `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. |
-| `status.mjs` | `data/`, `reports/tracker.md` | stdout summary |
-| `lib/schema.mjs` | (library) | YAML shape validator |
+| Script | Reads | Writes | Used by |
+|---|---|---|---|
+| `fetch.mjs` | `working/sources.yaml` entry, source URL (JSON for type=api) | `data/raw/<ts>-<name>.jsonl` | scan |
+| `dedup.mjs` | `data/seen.jsonl` + stdin JSONL (read-only — does NOT write to seen.jsonl) | stdout new URLs only | scan |
+| `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL | eval |
+| `onboard.mjs` | `templates/` | `working/` | onboard |
+| `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. | npm postinstall |
+| `status.mjs` | `data/`, `reports/tracker.md` | stdout summary | status |
+| `lib/schema.mjs` | (library) | YAML shape validator | scan/onboard |
 
 ## Two-stage filter pipeline
 
-### Stage 1 — title-only triage (cheap, deterministic)
+### Stage 1 — Aggregate (scan, recall-first)
 
-Operates on `{ url, title }` from the scan agent. Listing-body fields
-(company, location, posted_at, description) are empty at scan time,
-so gates needing them auto-no-op and migrate to Stage 2.
+`/argopia-scan` casts a wide net using **source pre-filter via URL
+params**: read `criteria.target.*` (`search_queries`, `remote_only`,
+`level`, `max_listing_age_days`) and append them per each source's
+`filter_hints` URL syntax. Each entry in `search_queries` triggers a
+separate fetch pass per source. The source's own server-side filter
+does the coarse work.
+
+Then dedup the fetched URLs against `data/seen.jsonl` (read-only — scan
+doesn't write to seen). Output: `data/queue/<ts>.txt`.
+
+No keyword filter at this stage. Title-only filtering would drop
+listings whose relevance lives in the body. Cost: $0 (just orchestration).
+
+### Stage 2 — Judge (eval, precision-first)
+
+`/argopia-eval` reads each queued URL, fetches the JD body, and:
+
+1. Applies the **keyword filter** (`scripts/filter.mjs`) against
+   title + body. Gates:
 
 | Gate | Source | Behavior |
 |---|---|---|
 | Sub-target seniority | auto-derived from `target.level` | drops {junior, intern, trainee, entry-level, ...} matches against title |
-| `keywords.negative` | criteria.yaml | vocabulary-collision drops (title only) |
-| Positive required | criteria.yaml `keywords.positive` | at least one of: `job_titles`, `title_token_sets` (AND of tokens, separator-agnostic), `technical`, `tools` matches the title |
+| `keywords.negative` | criteria.yaml | vocabulary-collision drops (full haystack — title + body) |
+| Positive required | criteria.yaml `keywords.positive` | at least one of: `job_titles`, `title_token_sets` (AND of tokens), `technical`, `tools` matches |
+| `excluded_companies` | criteria.yaml `target` | runs against company field if present in body |
+| `max_listing_age_days` | criteria.yaml `target` | runs against posted-date in body |
+| Region lock | criteria.yaml `target.{preferred,acceptable}_timezones` | runs against location in body |
 
-`excluded_companies`, `max_listing_age_days`, region lock — all
-no-op at Stage 1 (no company/location/date in URL-only flow); they
-become red-flag caps at Stage 2.
+2. If the filter rejects → write a minimal "skipped: <reason>" report,
+   mark URL as seen. **No rubric tokens spent.**
 
-### Stage 2 — JD-aware judgment (full-body fetch, expensive)
+3. If the filter passes → apply the rubric, write a full report,
+   mark URL as seen with score.
 
-For each Stage-1 survivor, `/argopia-eval` fetches the JD body and
-evaluates against the rubric in `argopia-eval.md`. Hard gates that
-moved here from Stage 1 (excluded company, region lock, staleness) cap
-the recommendation at "skip" regardless of rubric score.
+Filter is body-aware here because the body is fetched anyway for
+rubric. Filter cost is $0 once body is fetched. The filter rejection
+path saves rubric tokens for the obvious mismatches.
 
 ## Non-obvious decisions (tribal knowledge)
 
@@ -181,7 +198,7 @@ the recommendation at "skip" regardless of rubric score.
   `type` (api / html / browser). Adding a `.mjs` per board would
   duplicate config that's already declarative.
 - **Don't break the 3-file `working/` contract.** New runtime config
-  goes in `schemas/` (validation) or `templates/<domain>/` (defaults).
+  goes in `schemas/` (validation) or `templates/` (defaults).
 - **Don't fabricate CV facts.** Missing field → `null`. Empty list-type
   section → `[]`. Don't infer `employment_type: full-time` unless the
   CV explicitly says so.

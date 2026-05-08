@@ -1,5 +1,5 @@
-# Your profile — populated from your CV by profile-extractor.
-# Consumed by criteria-deriver and the /argopia-eval rubric.
+# Your profile — structured representation of your CV. Populated
+# during onboarding; reviewed manually before downstream commands.
 # Schema: schemas/profile.schema.yaml
 #
 # - `null` or `[]` = the CV didn't mention that fact; fill in if you'd like.

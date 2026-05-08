@@ -1,9 +1,9 @@
-# JSON Schema (Draft 2020-12) for working/sources.yaml — where to look.
+# JSON Schema (Draft 2020-12) for working/sources.yaml — job board catalog.
 #
-# Each entry declares a `type` discriminator that drives scan dispatch:
-#   api      — JSON API.   Scan does HTTP GET, parses JSON via array_path + field_map.
-#   html     — Static HTML. Scan does HTTP GET, scrapes DOM via link_selector + link_pattern.
-#   browser  — SPA / auth.  Scan spawns a browser-MCP subagent to navigate and extract.
+# Each entry declares a `type` discriminator that determines the fetch mechanism:
+#   api      — JSON API endpoint; response is parsed via array_path + field_map.
+#   html     — Static HTML listings page; DOM is scraped via link_selector + link_pattern.
+#   browser  — SPA / auth-walled; requires a real browser session for navigation.
 #
 # Conventions:
 #   - One entry per job board (key = source slug).
@@ -23,51 +23,54 @@ additionalProperties:
     # ── Common to all source types ───────────────────────────────────────────
     enabled:
       type: boolean
-      description: "true: scan fetches this source. false: scan skips it (config preserved)."
+      description: "true: source is in scope for fetches. false: source is excluded (config preserved for re-enabling later)."
 
     base_url:
       type: string
-      description: "URL scan navigates to first. For type=api this is the endpoint; for type=html/browser this is the listings page."
+      description: "Entry URL for the source. For type=api this is the endpoint; for type=html/browser this is the listings page."
 
     type:
       type: string
       enum: [api, html, browser]
       description: |
-        Dispatch discriminator. Tells scan how to fetch + parse:
-          api      Direct HTTP GET (User-Agent: Mozilla/5.0). Parse response as
-                   JSON. Apply array_path → skip_first → max_listings, then map
-                   each item via field_map to {id, title, url, date, company, location}.
-          html     Always use Claude's WebFetch tool (NOT direct HTTP — some
-                   boards 403 plain libraries while WebFetch passes). Parse
-                   the returned content as DOM. Run link_selector, filter
-                   resulting hrefs against link_pattern, absolutize relative
-                   URLs by prepending link_base. Use pagination to advance
-                   until max_listings collected.
-          browser  Spawn a subagent with mcp_server. Hand it base_url +
-                   link_selector + link_pattern + filter_hints + pagination.
-                   Subagent navigates and returns {url, title} pairs.
+        Dispatch discriminator. Determines how the source's listings
+        are fetched and parsed:
+          api      JSON API endpoint. Response parses as JSON;
+                   array_path locates the listings array; skip_first
+                   and max_listings narrow scope; field_map projects
+                   each item onto canonical fields (id, title, url,
+                   date, company, location).
+          html     Static HTML listings page. Page content parses as
+                   DOM; link_selector matches anchor elements;
+                   link_pattern further filters their hrefs; relative
+                   URLs are absolutized via link_base; pagination drives
+                   advancement until max_listings is reached.
+          browser  SPA or dynamic page requiring browser navigation.
+                   mcp_server drives a real browser session that
+                   navigates the page, applies link_selector /
+                   link_pattern / pagination, and returns matching
+                   listings.
 
     requires_login:
       type: boolean
       default: false
-      description: "true: source is auth-walled — scan must use a logged-in browser session (cookies/profile). false: scan refuses any redirect to a login page (safety guardrail)."
+      description: "true: source requires authentication; only accessible via a logged-in browser session (cookies/profile). false: source is publicly browseable; redirects to login pages indicate a misconfiguration."
 
     max_listings:
       type: integer
       default: 100
-      description: "Hard cap on listings returned per scan. Stops pagination/iteration once reached. Bounds token cost downstream."
+      description: "Hard cap on listings returned per fetch. Pagination / iteration stops once this many records have been collected."
 
     filter_hints:
       type: [string, "null"]
       default: null
       description: |
-        Per-source prose read by scan when constructing the fetch URL.
-        Documents URL filter syntax (query params, path segments, or
-        "none" for UI-only), pagination mechanism, JD URL format, and
-        access caveats (anti-bot, login walls, geo restrictions).
-        Free-form since each source's conventions differ — scan
-        interprets it to combine base_url with applicable
-        criteria.target.* fields.
+        Per-source prose documenting the source's URL filter syntax
+        (query params, path segments, or "none" for UI-only),
+        pagination mechanism, JD URL format, and access caveats
+        (anti-bot, login walls, geo restrictions). Free-form since
+        each source's conventions differ. Used to construct fetch
+        URLs by combining base_url with applicable filter parameters.
 
     # ── type: api ────────────────────────────────────────────────────────────
     array_path:
@@ -95,16 +98,17 @@ additionalProperties:
           field_map.company = "company"               → extracts {display_name:"Acme"}  (the object)
           field_map.company = "company.display_name"  → extracts "Acme"                 (the string) ✓
 
-        For each listing the agent extracts:
+        For each listing, canonical fields are extracted:
           normalized.id       = item[field_map.id]       (required)
           normalized.title    = item[field_map.title]    (required)
           normalized.url      = item[field_map.url]      (required)
           normalized.date     = item[field_map.date]     (or null if mapping is null)
           normalized.company  = item[field_map.company]  (or null)
           normalized.location = item[field_map.location] (or null)
-        If any path segment is missing on an item, set normalized field to null and continue.
+        If any path segment is missing on an item, the normalized field
+        is set to null and processing continues.
       properties:
-        id:       { type: string, default: "id",       description: "Source field for stable per-listing ID (used by dedup)." }
+        id:       { type: string, default: "id",       description: "Source field for the stable per-listing ID." }
         title:    { type: string, default: "title",    description: "Source field for the role title." }
         url:      { type: string, default: "url",      description: "Source field for the JD page URL." }
         date:     { type: [string, "null"], default: null, description: "Source field for posted-date (ISO 8601 if possible). null = source has no date." }
@@ -127,7 +131,7 @@ additionalProperties:
       default: null
       description: |
         Origin prefix for absolutizing relative hrefs.
-          null (default)  Scan derives the origin from base_url
+          null (default)  Origin is derived from base_url
                           (e.g., 'https://aijobs.net/jobs' → 'https://aijobs.net').
                           Covers most cases.
           explicit        Set when the ATS hosts JDs on a DIFFERENT origin than
@@ -139,15 +143,17 @@ additionalProperties:
       enum: [scroll, next-button, none]
       default: none
       description: |
-        How to advance after the first page (until max_listings reached):
-          scroll       Trigger infinite-scroll (browser MCP scrolls to page bottom and waits for new listings).
-          next-button  Click "Next" or follow ?page=N+1 query (HTML scrape) until no more.
-          none         Single response is sufficient — don't paginate.
+        How additional pages are reached (until max_listings is satisfied):
+          scroll       Source uses infinite-scroll to load additional listings.
+          next-button  Source has explicit pagination controls (clickable "Next"
+                       or query-string advance like ?page=N+1).
+          none         Source returns all relevant listings in a single response.
 
     # ── type: browser only ──────────────────────────────────────────────────
     mcp_server:
       type: string
       default: playwright
       description: |
-        Which browser MCP server scan spawns the subagent against. Defaults
-        to playwright; override only if a source needs a different driver.
+        Browser MCP server identifier used to drive the navigation
+        session for type=browser sources. Defaults to playwright;
+        override only if a source needs a different driver.

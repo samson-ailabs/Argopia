@@ -1,6 +1,6 @@
 ---
 name: criteria-deriver
-description: Read working/profile.yaml and derive working/criteria.yaml fields the CV makes objective — timezones from location, current employer in excluded_companies, work-auth deal-breakers, title token sets from seniority+domain, mined keywords from achievements, nice-to-haves from CV signals.
+description: Read working/profile.yaml and derive working/criteria.yaml fields the CV makes objective — search queries from domain, level from seniority, timezones from location, current employer in excluded_companies, work-auth deal-breakers, title token sets, mined keywords from achievements, nice-to-haves from CV signals.
 tools: [Read, Edit]
 model: inherit
 ---
@@ -8,22 +8,21 @@ model: inherit
 # Criteria Deriver
 
 Read `working/profile.yaml` and derive the parts of
-`working/criteria.yaml` that the CV makes objective: timezones from
-location, current employer in excluded_companies, work-auth
-deal-breakers, title token sets from seniority+domain, mined
-keywords from achievements, nice-to-haves from CV signals.
+`working/criteria.yaml` that the CV makes objective.
+
+`schemas/criteria.schema.yaml` is the source of truth for shape and
+field semantics; the rules below cover only judgment calls the schema
+can't express.
 
 ## Inputs
 
-```
-domain: <chosen template domain, e.g. "default">
-```
+(none — reads `working/profile.yaml` and `working/criteria.yaml` directly)
 
 **Pre-conditions:**
 - `working/profile.yaml` is populated.
-- `working/criteria.yaml` exists, copied from a template. Lists may be
-  empty (default template) or pre-curated (domain template); the
-  derivations below append rather than replace, so either works.
+- `working/criteria.yaml` exists, copied from `templates/`. Lists may
+  be empty (fresh scaffold) or pre-populated (user already edited);
+  the derivations below append rather than replace, so either works.
 
 ## Behavior
 
@@ -36,20 +35,24 @@ domain: <chosen template domain, e.g. "default">
 **Universal rule: never remove existing curated entries — only append
 or overwrite specific values.**
 
-#### A. `target.domain` — set to the input `domain`.
+#### `target.search_queries` — fill if empty
 
-#### A.5. `target.search_query` — fill if null
+If `target.search_queries` is empty, populate it with 1-3 broad terms
+covering the candidate's domain. Pick from `tech_stack` keys,
+`experience[0].title` keywords, or domain-typical role titles.
+Examples:
+- speech-AI candidate: `["speech", "ai engineer", "voice"]`
+- frontend dev: `["frontend engineer", "react", "ui engineer"]`
+- data engineer: `["data engineer", "etl"]`
+- research scientist: `["ml engineer", "machine learning", "research"]`
 
-If `target.search_query` is null (default template), set it to a
-single broad term that captures the candidate's domain. Pick from
-`tech_stack` keys or `experience[0].title` keywords. Examples:
-"speech" (speech-AI candidate), "frontend" (frontend dev), "data
-engineer" (data candidate), "ml" (research scientist). One word or a
-short phrase — narrowed further by the keyword filter at scan time.
+Each query is used to fetch a separate set of candidate listings;
+results merge and dedup downstream. Stay broad — fine-grained filtering
+happens later via `keywords`.
 
-If `search_query` is already set (domain template), leave it.
+If `search_queries` already has entries, leave them.
 
-#### B. `target.level` — candidate's current seniority + 1 step up
+#### `target.level` — candidate's current seniority + 1 step up
 
 Map common title prefixes:
 - "Senior" / "Sr." → `[Senior, Staff, Lead, Principal, Head]`
@@ -61,7 +64,7 @@ Map common title prefixes:
 
 Don't include levels the candidate has outgrown.
 
-#### C. `target.preferred_timezones` and `target.acceptable_timezones`
+#### `target.preferred_timezones` and `target.acceptable_timezones`
 
 From `candidate.location.country`:
 
@@ -78,36 +81,34 @@ From `candidate.location.country`:
 
 If `country` is null, leave template values; flag in output.
 
-#### D. `target.excluded_companies`
+#### `target.excluded_companies`
 
 Append `experience[0].employer` (current employer) if not already
 present (case-insensitive). Keep all template entries.
 
-#### E. `keywords.positive.title_token_sets`
+#### `keywords.positive.title_token_sets`
 
-For each level chosen in B × domain anchor (derived from the candidate's
-`tech_stack` keys or current title — e.g. "speech", "frontend", "ml"),
-append a token set if not already covered by the template. Example for
-levels `[Senior, Staff, Lead, Principal, Head]` with anchor "speech":
-`[lead, engineer, speech]`, `[principal, engineer, speech]`,
-`[staff, engineer, audio]`, etc. The same pattern applies for any
-domain anchor.
+For each level (from `target.level`) × domain anchor (derived from the
+candidate's `tech_stack` keys or current title — e.g. "speech",
+"frontend", "ml"), append a token set if not already covered by the
+template. Example for levels `[Senior, Staff, Lead, Principal, Head]`
+with anchor "speech": `[lead, engineer, speech]`,
+`[principal, engineer, speech]`, `[staff, engineer, audio]`, etc.
+The same pattern applies for any domain anchor.
 
-#### F. `keywords.positive.{job_titles, technical, tools}` — fill from CV
+#### `keywords.positive.{job_titles, technical, tools}` — fill from CV
 
-Behavior depends on whether the seed shipped curated content:
+Behavior depends on whether `job_titles` is already populated:
 
-- **If `job_titles` is empty** (default template): synthesize fully
-  from CV. Seed with the candidate's current title, then add 5-15
-  variants the candidate could plausibly apply to (synonyms with
-  different seniority levels, alternate phrasings, common industry
-  alternates). Example for a Lead Frontend Engineer: `lead frontend
-  engineer`, `staff frontend engineer`, `principal frontend engineer`,
-  `head of frontend`, `frontend platform engineer`, `senior frontend
-  engineer`.
-- **If `job_titles` already has curated entries** (domain template):
-  leave them. Optionally add candidate-specific seniority variants
-  not already covered.
+- **If empty**: synthesize fully from CV. Seed with the candidate's
+  current title, then add 5-15 variants the candidate could plausibly
+  apply to (synonyms with different seniority levels, alternate
+  phrasings, common industry alternates). Example for a Lead Frontend
+  Engineer: `lead frontend engineer`, `staff frontend engineer`,
+  `principal frontend engineer`, `head of frontend`, `frontend platform
+  engineer`, `senior frontend engineer`.
+- **If already populated**: leave existing entries. Optionally add
+  candidate-specific seniority variants not already covered.
 
 For `technical` and `tools`, scan `experience[*].achievements` and
 `projects[*].achievements` (plus `tech_stack` for tools) and append any
@@ -122,7 +123,7 @@ Skip generic terms (Python, Linux, Docker, Git, SQL, REST, JSON) —
 true of nearly every JD. Skip anything in `keywords.negative` —
 don't reintroduce excluded terms positively.
 
-#### G. `deal_breakers` — work-auth conflicts
+#### `deal_breakers` — work-auth conflicts
 
 For each major hiring region NOT in `candidate.work_authorized_in`,
 append:
@@ -137,7 +138,7 @@ append:
 
 These phrases often appear verbatim in JDs.
 
-#### H. `nice_to_haves` — derive from CV signals
+#### `nice_to_haves` — derive from CV signals
 
 | If profile has | Append |
 |---|---|
@@ -163,11 +164,15 @@ template. Leave them alone:
 {
   "status": "ok",
   "auto_filled": {
+    "target.search_queries": ["speech", "ai engineer", "voice"],
+    "target.level": ["Senior", "Staff", "Lead", "Principal", "Head"],
     "target.preferred_timezones": "[APAC] (from candidate location: Singapore)",
     "target.acceptable_timezones": "[EMEA]",
     "target.excluded_companies_added": ["VoxLab AI"],
-    "title_token_sets_added": [["lead", "engineer", "speech"], ["principal", "engineer", "speech"]],
-    "tech_keywords_added": ["Riva", "Mimi", "Cartesia"],
+    "keywords.positive.job_titles_added": ["Senior AI Engineer", "Staff AI Engineer", "Lead Voice Engineer"],
+    "keywords.positive.title_token_sets_added": [["lead", "engineer", "speech"], ["principal", "engineer", "speech"]],
+    "keywords.positive.technical_added": ["streaming ASR", "voice agents"],
+    "keywords.positive.tools_added": ["Riva", "Mimi", "Cartesia"],
     "deal_breakers_added": ["US work authorization required", "EU work authorization required"],
     "nice_to_haves_added": ["open-source culture / OSS contributions encouraged", "team leadership opportunity"]
   },

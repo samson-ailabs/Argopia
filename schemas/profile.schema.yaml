@@ -1,11 +1,26 @@
-# JSON Schema (Draft 2020-12) for working/profile.yaml — candidate identity.
+# JSON Schema (Draft 2020-12) for working/profile.yaml — structured CV.
+#
+# Sections cover identity, work history, technical fluency, education,
+# work output, recognition, and community involvement. Order from
+# top to bottom is conventionally most-canonical to least (identity and
+# experience first, community contributions last).
 #
 # Conventions:
-#   - Required keys must exist; their value may be null. Optional keys may
-#     be omitted; null / [] keeps shape stable.
-#   - Date strings are "YYYY-MM" or "YYYY"; `end` may be "present".
-#   - Defaults below populate fresh scaffolds; the profile-extractor agent
-#     then overwrites null values with CV-derived facts.
+#   - Required keys must exist; their value may be null. Optional keys
+#     may be omitted; null / [] keeps shape stable.
+#   - Date strings are "YYYY-MM" or "YYYY"; experience/projects/etc.
+#     `end` may be "present".
+#   - Don't fabricate: missing CV fact → null; empty list-type section
+#     → []. Values must trace back to explicit CV statements.
+#
+# Fields intentionally NOT present (don't add):
+#   - current_employer        — derived from experience[0].employer
+#   - experience[].location   — employer location is out of scope here
+#   - experience[].tools      — tools live under top-level tech_stack
+#   - projects[].tech         — same; via achievements + tech_stack
+#   - candidate.languages     — HUMAN languages (Vietnamese, English).
+#                                Programming languages live under
+#                                tech_stack.programming_languages.
 
 $schema: "https://json-schema.org/draft/2020-12/schema"
 title: Argopia profile
@@ -15,11 +30,16 @@ additionalProperties: false
 required: [candidate, experience]
 
 properties:
+  # ── candidate: identity, contact, location, language proficiency ─────────
   candidate:
     type: object
     additionalProperties: false
     required: [name, current_title, years_experience, summary]
     default: {}
+    description: |
+      Identity, contact, location, human-language proficiency, work
+      authorization. work_authorized_in lists regions the candidate
+      is legally permitted to work in (country/region codes).
     properties:
       name:                 { type: [string, "null"], default: null }
       current_title:        { type: [string, "null"], default: null }
@@ -76,9 +96,14 @@ properties:
         items: { type: string }
         default: []
 
+  # ── experience: work history (reverse-chronological) ────────────────────
   experience:
     type: array
     default: []
+    description: |
+      Reverse-chronological work history. experience[0] is the
+      current/most recent role. Each role's achievements are narrative
+      bullets capturing scope, ownership, and impact.
     items:
       type: object
       additionalProperties: false
@@ -95,16 +120,33 @@ properties:
           items: { type: string }
           default: []
 
+  # ── tech_stack: categorized technical fluency inventory ─────────────────
   tech_stack:
     type: object
     default: {}
+    description: |
+      Categorized inventory of the candidate's technical fluency. Keys
+      are domain-specific category labels — abbreviations for
+      well-known buckets (asr, tts, llm, mlops, vlm, rag) and plural
+      nouns for enumerable lists (voice_agents, programming_languages,
+      cloud_platforms). Values are arrays of named tools, libraries,
+      or services within each category. Example:
+        tech_stack:
+          asr: [Whisper, wav2vec, Conformer]
+          voice_agents: [Pipecat, LiveKit, Cartesia]
+          programming_languages: [Python, Go, TypeScript]
     additionalProperties:
       type: array
       items: { type: string }
 
+  # ── education: formal degrees + thesis/honors ───────────────────────────
   education:
     type: array
     default: []
+    description: |
+      Formal education entries. honors and thesis only fill when the
+      CV cites them explicitly. gpa accepts free-form strings ("3.5/4.0",
+      "First Class Honours", etc.) — different schools format differently.
     items:
       type: object
       additionalProperties: false
@@ -123,9 +165,14 @@ properties:
           default: []
         thesis: { type: [string, "null"], default: null }
 
+  # ── projects: notable side projects or owned work products ─────────────
   projects:
     type: array
     default: []
+    description: |
+      Side projects, hackathon wins, owned products outside primary
+      employment. Each entry has its own achievements bullets capturing
+      what was built and its scope. url is optional (CV often omits links).
     items:
       type: object
       additionalProperties: false
@@ -141,9 +188,14 @@ properties:
           items: { type: string }
           default: []
 
+  # ── publications: papers, preprints, books, theses ──────────────────────
   publications:
     type: array
     default: []
+    description: |
+      Authored research output. `kind` enum classifies the type
+      (paper, preprint, book, book_chapter, thesis). Don't infer
+      `citations` — only fill when CV explicitly cites a count.
     items:
       type: object
       additionalProperties: false
@@ -157,9 +209,15 @@ properties:
         kind:      { type: [string, "null"], default: null, enum: [paper, preprint, book, book_chapter, thesis, null] }
         citations: { type: [integer, "null"], default: null, description: "only fill when CV explicitly cites a count" }
 
+  # ── patents: filed/granted intellectual property ────────────────────────
   patents:
     type: array
     default: []
+    description: |
+      Filed or granted patents. `status` enum distinguishes filed
+      (submitted, awaiting decision) from published (made public) and
+      granted (accepted). inventors stays free-form comma-separated to
+      preserve order from the CV.
     items:
       type: object
       additionalProperties: false
@@ -172,9 +230,15 @@ properties:
         status:    { type: [string, "null"], default: null, enum: [filed, published, granted, null] }
         url:       { type: [string, "null"], default: null }
 
+  # ── open_source: OSS contributions ──────────────────────────────────────
   open_source:
     type: array
     default: []
+    description: |
+      Notable OSS projects the candidate contributes to. `role` enum
+      signals depth: author > maintainer > core_contributor >
+      contributor. stars captures the project's GitHub stars at the
+      time the CV was written (rough scale indicator).
     items:
       type: object
       additionalProperties: false
@@ -188,9 +252,14 @@ properties:
         start:       { type: [string, "null"], default: null }
         end:         { type: [string, "null"], default: null }
 
+  # ── awards: recognition + competitive wins ──────────────────────────────
   awards:
     type: array
     default: []
+    description: |
+      External recognition (industry awards, hackathon wins, scholarships).
+      `year` accepts ranges (e.g. "2021-2023" for multi-year recognition).
+      issuer captures the awarding body for context.
     items:
       type: object
       additionalProperties: false
@@ -201,9 +270,15 @@ properties:
         issuer: { type: [string, "null"], default: null }
         url:    { type: [string, "null"], default: null }
 
+  # ── certifications: industry certs (cloud, security, frameworks) ────────
   certifications:
     type: array
     default: []
+    description: |
+      Industry certifications — cloud (AWS, GCP, Azure), security
+      (CISSP, CEH), framework-specific. expires: null for non-expiring
+      certs (most credentials expire in 2-3 years; track to avoid
+      surfacing stale ones).
     items:
       type: object
       additionalProperties: false
@@ -215,9 +290,14 @@ properties:
         expires: { type: [string, "null"], default: null, description: "null for non-expiring certs" }
         url:     { type: [string, "null"], default: null }
 
+  # ── talks: public speaking + workshops ──────────────────────────────────
   talks:
     type: array
     default: []
+    description: |
+      Conference talks, keynotes, workshops, panel appearances. `kind`
+      enum classifies the format (keynote, conference_talk, workshop,
+      webinar, panel). Recordings or slides go in url.
     items:
       type: object
       additionalProperties: false
@@ -229,9 +309,14 @@ properties:
         kind:  { type: [string, "null"], default: null, enum: [keynote, conference_talk, workshop, webinar, panel, null] }
         url:   { type: [string, "null"], default: null }
 
+  # ── volunteering: community contributions outside paid work ─────────────
   volunteering:
     type: array
     default: []
+    description: |
+      Pro-bono / community roles — meetup organizing, mentorship
+      programs, NGO contributions. Each entry has achievements bullets
+      mirroring experience structure.
     items:
       type: object
       additionalProperties: false

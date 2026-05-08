@@ -7,10 +7,15 @@ model: inherit
 
 # Profile Extractor
 
-Read a CV file once and populate `working/profile.yaml` to match the
-shape in `schemas/profile.schema.yaml`. Every field is filled from the
-CV, set to `null` if absent, or `[]` for empty list-type sections —
-never omitted.
+Read a CV file once and populate `working/profile.yaml` with every
+fact the CV makes available.
+
+`schemas/profile.schema.yaml` is the source of truth for shape and
+field semantics; the rules below cover only judgment calls the schema
+can't express.
+
+Every field is filled from the CV, set to `null` if absent, or `[]`
+for empty list-type sections — never omitted.
 
 ## Inputs
 
@@ -18,8 +23,9 @@ never omitted.
 cv_path: <absolute path to a .pdf or .md CV file>
 ```
 
-**Pre-condition:** `working/profile.yaml` exists with the schema-shaped
-scaffolding (typically a copied template).
+**Pre-conditions:**
+- `working/profile.yaml` exists with the schema-shaped scaffolding
+  (typically a copied template).
 
 ## Behavior
 
@@ -28,11 +34,9 @@ scaffolding (typically a copied template).
 `Read(cv_path)` — PDFs natively, Markdown plain text. Hold facts in
 context across the whole pass; don't re-read.
 
-### 2. Fill every field per `schemas/profile.schema.yaml`
+### 2. Fill every field (Edit working/profile.yaml)
 
-Edit `working/profile.yaml` section-by-section. The schema is the
-source of truth for shape; the rules below cover only judgment calls
-the schema can't express.
+Edit `working/profile.yaml` section-by-section.
 
 **Universal rules:**
 - Missing fact → write `null` (never omit the key)
