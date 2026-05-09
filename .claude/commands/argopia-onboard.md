@@ -102,7 +102,7 @@ Apply the dispatch protocol with:
 | Inputs                | `cv_path: <absolute path from Step 0>`                                      |
 | Description           | `"Argopia profile-extractor"`                                               |
 | On `status != "ok"`   | Surface the failure verbatim and **stop** — don't proceed to Step 3.        |
-| Keep for checklist    | `filled_sections`, `null_fields`, `empty_list_sections`, `url_recovery_*`   |
+| Keep for checklist    | `filled_sections`, `null_fields`, `empty_list_sections`, `url_recovery_attempted`, `url_recovery_succeeded` |
 
 ## Step 3 — Spawn criteria-deriver
 

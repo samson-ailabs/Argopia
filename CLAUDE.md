@@ -4,9 +4,6 @@ Job-search bot for Claude Code. Two-stage pipeline: deterministic Node
 filter → in-context Claude scoring. **README.md targets human users;
 this file targets me.**
 
-User-layer vs system-layer file ownership is documented in
-`DATA_CONTRACT.md`. Every edit decision should respect that boundary.
-
 ## Stack
 
 - Node 20+ — two npm deps: `js-yaml` (parse YAML), `ajv` (JSON Schema validation)
@@ -25,8 +22,6 @@ User-layer vs system-layer file ownership is documented in
 | "What does the user see?" | `README.md` |
 | "What's the rubric?" | `.claude/commands/argopia-review.md` (inlined) |
 | "What conventions apply?" | The `Conventions:` block at the top of each schema |
-| "Is this file user-owned or system-owned?" | `DATA_CONTRACT.md` |
-| "What's planned next?" | GitHub Issues / Discussions |
 
 ## The two-stage model — load-bearing contract
 
@@ -46,7 +41,7 @@ something belongs:
 
 ```
 .claude/commands/    user-facing slash commands (entry surface)
-.claude/agents/      reusable subagent prompts (profile-extractor, criteria-deriver)
+.claude/agents/      reusable subagent prompts (profile-extractor, criteria-deriver, source-surveyor, posting-fetcher)
 schemas/             3 validation contracts (profile, criteria, sources)
 templates/           starter scaffolds copied to working/ during onboarding
 scripts/             single-file Node helpers (.mjs)
@@ -99,32 +94,10 @@ Environment setup runs automatically on `npm install` via
 | `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. | npm postinstall |
 | `lib/schema.mjs` | (library) | YAML shape validator | survey/onboard |
 
-## Two-stage pipeline
+## Filter gates (survey, body-aware)
 
-### Stage 1 — Survey (recall-first)
-
-`/argopia-survey` casts a wide net using **source pre-filter via URL
-params**: read `criteria.target.*` (`search_queries`, `remote_only`,
-`level`, `max_listing_age_days`) and append them per each source's
-`filter_hints` URL syntax. Each entry in `search_queries` triggers a
-separate fetch pass per source. The source's own server-side filter
-does the coarse work.
-
-The survey pipeline (one command, end-to-end):
-
-1. **Discover** URLs from listing pages → `data/listings/<TS>-<source>.jsonl`.
-2. **Prepare** (`survey.mjs prepare`): drop URLs already in
-   `data/history.jsonl`, dedup within survey, compute `posting_path =
-   data/postings/<sha1-of-url>.md` for each survivor, identify cache misses.
-3. **Posting fetch**: for each cache-miss URL, WebFetch the JD posting
-   and write to `data/postings/<sha1>.md` (one provenance comment +
-   markdown content). Cache hits skip this step entirely.
-4. **Filter** (`survey.mjs inject` → `filter.mjs` → `survey.mjs finalize`):
-   inject posting content as `description`, run keyword gates, strip
-   description from survivors. Survivors land in
-   `data/openings/<TS>.jsonl`.
-
-Filter gates (body-aware, since body is now in context):
+Applied by `filter.mjs` after the posting body is injected. All gates
+read from `working/criteria.yaml`:
 
 | Gate | Source | Behavior |
 |---|---|---|
@@ -135,25 +108,14 @@ Filter gates (body-aware, since body is now in context):
 | `max_listing_age_days` | criteria.yaml `target` | runs against posted-date in body |
 | Region lock | criteria.yaml `target.{preferred,acceptable}_timezones` | runs against location in body |
 
+## Idempotency
+
 Survey writes nothing to `history.jsonl` — that's review's job.
-Re-running survey with tweaked criteria re-evaluates filter rejects
-without re-fetching postings (cache hits all the way through).
-
-### Stage 2 — Review (precision-first)
-
-`/argopia-review` reads the newest `data/openings/<TS>.jsonl`, drops
-records whose URL already appears in `data/history.jsonl` (lifetime
-review history), and processes the remaining set under `--top N` /
-`--all` gating. For each:
-
-1. Read the cached posting from `posting_path` (one disk read; no network).
-2. Apply the rubric → 5 subscores + weighted total + recommendation.
-3. Write the per-JD report and append a tracker row.
-4. Append `{url, judged_at, score, recommendation}` to
-   `data/history.jsonl` so the URL won't be re-surveyed.
-
-Posting cache + URL-keyed history ledger together mean survey and
-review are both idempotent and incrementally re-runnable.
+Posting cache (`data/postings/<sha1>.md`) + URL-keyed history ledger
+(`data/history.jsonl`) together mean both commands are incrementally
+re-runnable: re-running survey with tweaked criteria re-evaluates
+filter rejects without re-fetching postings; re-running review skips
+URLs already judged.
 
 ## Non-obvious decisions (tribal knowledge)
 

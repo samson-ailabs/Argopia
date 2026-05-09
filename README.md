@@ -120,9 +120,10 @@ to customize, that's a bug — open an issue.
 
 ## What's mine vs the system
 
-`working/`, `data/`, `reports/` are gitignored — they're yours forever. Templates, schemas, scripts, and slash commands ship with the repo
-and get updated. See [DATA_CONTRACT.md](DATA_CONTRACT.md) for the full
-ownership table.
+`working/`, `data/`, `reports/` are gitignored — they're yours
+forever. Templates, schemas, scripts, slash commands, and agents are
+tracked and get updated alongside the repo. Edit `working/`, never
+`templates/` — your `working/` edits never get clobbered by `git pull`.
 
 ## Status & roadmap
 
