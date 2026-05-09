@@ -39,8 +39,7 @@ will replace these with newer versions.
 | `templates/*.yaml` | Starter templates copied into `working/` during onboarding |
 | `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, fetch, survey, filter) |
 | `.claude/commands/*.md` | Slash command definitions |
-| `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
-| `.claude-plugin/plugin.json` | Plugin manifest |
+| `.claude/agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
 | `CLAUDE.md`, `README.md`, `DATA_CONTRACT.md` | Framework docs |
 | `LICENSE` | Project license (MIT). `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` planned. |
 | `package.json`, `package-lock.json` | Dependencies |

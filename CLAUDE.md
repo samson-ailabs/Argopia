@@ -45,9 +45,8 @@ something belongs:
 ## File layout
 
 ```
-.claude-plugin/      plugin manifest (commands/agents/MCP discovery)
 .claude/commands/    user-facing slash commands (entry surface)
-agents/              reusable subagent prompts (profile-extractor, criteria-deriver)
+.claude/agents/      reusable subagent prompts (profile-extractor, criteria-deriver)
 schemas/             3 validation contracts (profile, criteria, sources)
 templates/           starter scaffolds copied to working/ during onboarding
 scripts/             single-file Node helpers (.mjs)

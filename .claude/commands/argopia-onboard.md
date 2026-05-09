@@ -36,18 +36,12 @@ Step 4  print review checklist
 
 For each agent invocation:
 
-1. **Read** the agent file (`agents/<name>.md`) with the Read tool.
-2. **Substitute** the file's `## Inputs` block verbatim with the
-   step-specific inputs.
-3. **Spawn** via the Agent tool. Pick `subagent_type` by checking your
-   session's available subagent_types list:
-   - **If `<name>` is listed** (Argopia is plugin-loaded): prefer it.
-     The `prompt` only needs the substituted Inputs block — the
-     agent's frontmatter (tools, MCP) is loaded from the plugin.
-   - **Otherwise**: use `general-purpose` (the agents need Edit, which
-     Explore lacks). Pass the full agent file content with the Inputs
-     block substituted as the `prompt`.
-   - `description`: `"Argopia <name>"`.
+1. **Spawn** via the Agent tool with `subagent_type: <name>`. The agent
+   body is auto-loaded from `.claude/agents/<name>.md` when Claude Code
+   opens the project — no manual file read required.
+2. Pass the step-specific inputs (per the agent's `## Inputs` block) as
+   the Agent tool's `prompt`.
+3. Set `description` to `"Argopia <name>"`.
 4. **Wait** for the JSON status return.
 5. **Apply** the per-step failure behavior and remember the per-step
    JSON fields for the Step 4 checklist (each step's table specifies both).
@@ -104,7 +98,7 @@ Apply the dispatch protocol with:
 
 | Parameter             | Value                                                                       |
 |-----------------------|-----------------------------------------------------------------------------|
-| Agent file            | `agents/profile-extractor.md`                                               |
+| `subagent_type`       | `profile-extractor`                                                         |
 | Inputs                | `cv_path: <absolute path from Step 0>`                                      |
 | Description           | `"Argopia profile-extractor"`                                               |
 | On `status != "ok"`   | Surface the failure verbatim and **stop** — don't proceed to Step 3.        |
@@ -116,7 +110,7 @@ Apply the dispatch protocol with:
 
 | Parameter             | Value                                                                       |
 |-----------------------|-----------------------------------------------------------------------------|
-| Agent file            | `agents/criteria-deriver.md`                                                |
+| `subagent_type`       | `criteria-deriver`                                                          |
 | Inputs                | (none)                                                                      |
 | Description           | `"Argopia criteria-deriver"`                                                |
 | On `status != "ok"`   | Surface the failure but **don't roll back** — user can re-run manually.     |
