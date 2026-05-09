@@ -157,6 +157,22 @@ template. Leave them alone:
 - `keywords.negative` — industry/values avoidance (crypto, defense,
   gambling, etc.)
 
+### 4. Post-fill housekeeping
+
+The template ships with inline and whole-line `# ...` comments that
+help users fill empty fields (formats, examples, conventions). Once a
+field is populated those hints become noise next to the populated
+value — schema is the authoritative reference.
+
+For every field you populated, strip its associated template comments:
+- Inline `# ...` on the populated value line
+- Whole-line `# ...` block immediately below the populated field
+
+Keep:
+- The file-level header (top-of-file comment block)
+- Comments associated with still-`null` or still-`[]` fields (the user
+  may fill those later)
+
 ## Outputs
 
 ```json
