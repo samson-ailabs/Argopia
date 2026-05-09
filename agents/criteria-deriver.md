@@ -37,20 +37,19 @@ or overwrite specific values.**
 
 #### `target.search_queries` — fill if empty
 
-If `target.search_queries` is empty, populate it with 1-3 broad terms
-covering the candidate's domain. Pick from `tech_stack` keys,
-`experience[0].title` keywords, or domain-typical role titles.
+If empty, populate with 1-3 broad **job-title forms** — what a hiring
+manager writes in a JD title. Use `experience[0].title` and
+domain-typical role titles. Avoid bare topic terms ("voice", "speech",
+"frontend") — too generic; they match noise.
+
 Examples:
-- speech-AI candidate: `["speech", "ai engineer", "voice"]`
-- frontend dev: `["frontend engineer", "react", "ui engineer"]`
-- data engineer: `["data engineer", "etl"]`
-- research scientist: `["ml engineer", "machine learning", "research"]`
+- speech-AI candidate: `["ai engineer", "machine learning engineer", "speech ai"]`
+- frontend dev: `["frontend engineer", "react engineer", "ui engineer"]`
+- data engineer: `["data engineer", "analytics engineer"]`
+- research scientist: `["research scientist", "applied scientist"]`
 
-Each query is used to fetch a separate set of candidate listings;
-results merge and dedup downstream. Stay broad — fine-grained filtering
-happens later via `keywords`.
-
-If `search_queries` already has entries, leave them.
+Each query triggers a separate fetch pass per source; results merge
+downstream. If already populated, leave it.
 
 #### `target.level` — candidate's current seniority + 1 step up
 

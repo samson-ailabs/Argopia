@@ -92,10 +92,11 @@ properties:
         items: { type: string }
         default: []
         description: |
-          Broad search terms typed verbatim into board search inputs to
-          fetch candidate listings. Keep broad (1-3 words each); the
-          keyword rules below handle precision. Example:
-          ["ai engineer", "machine learning"] for an ML candidate.
+          Broad job-title forms typed into each board's search input —
+          what a hiring manager writes in a JD title (e.g. "ai engineer",
+          "machine learning engineer", "speech ai"). Avoid bare topic
+          terms ("voice", "speech") — too generic. 1-3 entries; each
+          triggers a separate fetch pass per source.
 
   # ── keywords: matching rules ─────────────────────────────────────────────
   keywords:

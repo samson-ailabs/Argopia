@@ -1,15 +1,13 @@
-# Job board catalog — what to crawl.
+# Your job board catalog — which boards Argopia crawls and how. Ships
+# with a curated set; tune `enabled` per entry to adjust scope.
 # Schema: schemas/sources.schema.yaml
 #
-# Each entry declares a `type` discriminator that determines how its
-# listings are fetched:
-#   api      — JSON API endpoint; parsed via array_path + field_map.
-#   html     — Static HTML listings; scraped via link_selector + link_pattern.
-#   browser  — SPA / auth-walled; navigated via a browser MCP session.
-#
-# Disabled entries (enabled: false) are kept for reference; they
-# re-enable as the corresponding fetch path becomes available
-# (browser MCP for SPAs / auth-walled, API-key wiring for aggregators).
+# - Each entry's `type` determines fetch path:
+#     api      — JSON endpoint
+#     html     — static HTML listings
+#     browser  — SPA / auth-walled (browser MCP)
+# - Disabled entries stay listed (`enabled: false`) so their config
+#   isn't lost; flip true when the fetch path is ready.
 
 # ── JSON API sources ──
 

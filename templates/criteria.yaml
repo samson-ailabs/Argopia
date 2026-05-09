@@ -7,33 +7,28 @@
 # - Tune anything that doesn't match your actual preferences.
 
 target:
-  level: []                        # seniority labels — e.g. [Senior, Staff, Lead]; from CV title
+  level: []                        # from CV title — e.g. [Senior, Staff, Lead]
   remote_only: true
   open_to_relocate: false
-  preferred_timezones: []          # region buckets — [APAC|EMEA|Americas]; from candidate location
-  acceptable_timezones: []         # region buckets — [APAC|EMEA|Americas]; from candidate location
-  excluded_companies: []           # current employer is appended; user adds more
-  max_listing_age_days: 90         # listings older than this are out of scope
-  search_queries: []               # broad terms typed into each board's search input
-                                   # e.g. ["ai engineer", "ml"], ["frontend", "react"]
-                                   # each entry triggers a separate fetch pass per source
-                                   # precision filtering happens via keywords below
+  preferred_timezones: []          # from candidate location — [APAC|EMEA|Americas]
+  acceptable_timezones: []         # fallback regions
+  excluded_companies: []           # current employer auto-appended; user adds more
+  max_listing_age_days: 90
+  search_queries: []               # from CV title + domain — e.g. ["ai engineer", "speech ai"]
 
 keywords:
   positive:
     job_titles: []                 # from CV — at minimum the candidate's current title
-    title_token_sets: []           # list of token-sets — each set AND-matches against title
-                                   # (separator-agnostic). Example:
+    title_token_sets: []           # auto-derived from level × domain — e.g.
                                    # [[research, scientist, speech]] matches "Research Scientist, Speech AI"
-    technical: []                  # concept terms — e.g. "streaming ASR", "RAG"; mined from achievements
-    tools: []                      # named tools — e.g. "Whisper", "PyTorch"; mined from achievements + tech_stack
-  negative: []                     # domain-specific vocabulary collisions; user adds after onboarding
+    technical: []                  # mined from achievements — e.g. "streaming ASR", "RAG"
+    tools: []                      # mined from achievements + tech_stack — e.g. "Whisper", "PyTorch"
+  negative: []                     # user adds after onboarding (vocabulary collisions)
 
-must_haves: []                     # subjective minimums — user adds after onboarding
-                                   # e.g. "English-language work environment", "remote-first culture"
+must_haves: []                     # user adds after onboarding (soft minimums)
 
-deal_breakers:                     # universal-ish defaults; work-auth conflicts auto-append from profile
+deal_breakers:                     # universal-ish; work-auth conflicts auto-append from profile
   - equity-only or unpaid
 
-nice_to_haves:                     # universal-ish defaults; CV-derived signals auto-append from profile
+nice_to_haves:                     # universal-ish; CV-derived signals auto-append from profile
   - compensation visible in JD or salary range disclosed
