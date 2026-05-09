@@ -35,8 +35,8 @@ $ /argopia-onboard ./my-cv.pdf
 Profile (extracted from your CV): candidate, experience, education...
 Criteria (derived from your profile): search_queries, target.level, ...
 
-$ /argopia-scan
-$ /argopia-eval --top 10
+$ /argopia-scout
+$ /argopia-assay --top 10
 ```
 
 ## Principles
@@ -44,12 +44,12 @@ $ /argopia-eval --top 10
 - **CV is the spine.** Every config — keywords, deal-breakers, target
   levels, excluded companies — is derived from your CV, not the other
   way around.
-- **Cheap by default.** Stage 1 is deterministic Node (regex, dedup) that
-  drops 70-90% of listings before Claude ever sees them.
+- **Cheap by default.** Scout dedups against history and a content-addressed
+  posting cache, so re-runs cost nothing for what you've already seen.
+  The keyword filter drops 70-90% of postings before they reach the
+  rubric — assay tokens are spent only on plausible openings.
 - **Free everything.** Public boards + your existing Claude Code session.
   No paid APIs, no Anthropic billing, no cloud storage.
-- **Validates before it runs.** `/argopia-scan` rejects malformed
-  config upfront — bad setups never burn tokens.
 - **Human ranks, you apply.** Argopia surfaces, scores, and explains;
   you decide whether to apply. No spray-and-pray.
 - **Yours, not the bot's.** `working/` is your editable source of truth.
@@ -76,13 +76,13 @@ That's it. The onboard command guides you through review and the rest of the pip
 
 ## The pipeline
 
-| Command                   | What it does                                                  | Runs as                |
-|---------------------------|---------------------------------------------------------------|------------------------|
-| `/argopia-onboard <cv>`   | Parse CV → populate `working/profile.yaml` and `criteria.yaml`| Two subagents          |
-| `/argopia-scan`           | Validate config, fetch enabled sources, filter, dedup, queue  | Type-dispatched: api/html direct, browser-MCP for SPA |
-| `/argopia-eval [--top N]` | Fetch JD bodies, score against CV, write per-JD reports       | In-context Claude      |
-| `/argopia-insights`       | Aggregate tracker → market-vs-CV gap report (on demand)       | In-context Claude      |
-| `/argopia-status`         | Pipeline state at a glance + suggested next command           | Node script            |
+| Command                    | What it does                                                                   | Runs as                |
+|----------------------------|--------------------------------------------------------------------------------|------------------------|
+| `/argopia-onboard <cv>`    | Parse CV → populate `working/profile.yaml` and `criteria.yaml`                 | Two subagents          |
+| `/argopia-scout`           | Discover URLs from enabled sources, fetch JD postings (cached), filter, queue openings | Type-dispatched: api/html direct, browser-MCP for SPA |
+| `/argopia-assay [--top N]` | Read each opening's cached posting, score against CV, write per-JD reports | In-context Claude      |
+| `/argopia-insights`        | Aggregate tracker → market-vs-CV gap report (on demand)                        | In-context Claude      |
+| `/argopia-status`          | Pipeline state at a glance + suggested next command                            | Node script            |
 
 ## Configuration
 
@@ -94,7 +94,7 @@ Three files in `working/`, three matching files in `templates/`. Each owns one c
 | `criteria.yaml`  | Preferences — what you want / won't accept        | criteria-deriver + you       |
 | `sources.yaml`   | Where to look — one entry per board               | Preset; you tune to taste    |
 
-The Stage-2 scoring rubric lives **inside** `/argopia-eval` — not as a
+The scoring rubric lives **inside** `/argopia-assay` — not as a
 separate file the user maintains.
 
 ## Customizing the template
@@ -111,8 +111,8 @@ to customize, that's a bug — open an issue.
 
 - **No paid sources.** All shipped boards are public.
 - **No required API keys.** Just `npm install` and you're set.
-- **No separate Anthropic billing.** Eval and insights run inside your
-  existing Claude Code session.
+- **No separate Anthropic billing.** Scout, assay, and insights all run
+  inside your existing Claude Code session.
 - **Two npm deps.** `js-yaml` for parsing, `ajv` for JSON Schema validation.
 
 ## What's mine vs the system

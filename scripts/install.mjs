@@ -17,8 +17,9 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const RUNTIME_DIRS = [
   "working",
   "data",
-  "data/raw",
-  "data/queue",
+  "data/listings",
+  "data/postings",
+  "data/openings",
   "reports",
 ];
 

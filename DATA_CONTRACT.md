@@ -9,7 +9,7 @@ pull`, future `argopia update`) will only touch the system layer.
 
 ## User Layer — never auto-updated
 
-Your CV, your preferences, your scan history, your reports. Argopia
+Your CV, your preferences, your scout history, your reports. Argopia
 will never overwrite these.
 
 | Path | Purpose |
@@ -17,11 +17,12 @@ will never overwrite these.
 | `working/profile.yaml` | Your structured CV (after `/argopia-onboard`) |
 | `working/criteria.yaml` | Your target preferences and keyword filters |
 | `working/sources.yaml` | Which sources you've enabled / disabled |
-| `data/seen.jsonl` | URLs you've already encountered (dedup state) |
-| `data/raw/*.jsonl` | Per-scan raw fetches |
-| `data/queue/*.txt` | Per-scan filtered URL queues |
+| `data/history.jsonl` | URLs the assay has judged (lifetime dedup state) |
+| `data/listings/*.jsonl` | Per-scout listing-page output, one file per source |
+| `data/postings/<sha1>.md` | Cached JD postings, content-addressed by URL |
+| `data/openings/*.jsonl` | Per-scout filter survivors awaiting assay |
 | `reports/tracker.md` | Your central application tracker |
-| `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD evaluation reports |
+| `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD assay reports |
 | `reports/insights/<YYYY-MM-DD>.md` | On-demand market insights |
 | Any local PDF or markdown CV files | Source documents you onboard from |
 
@@ -36,7 +37,7 @@ will replace these with newer versions.
 |------|---------|
 | `schemas/*.schema.yaml` | Validation contracts for `working/*.yaml` |
 | `templates/*.yaml` | Starter templates copied into `working/` during onboarding |
-| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, filter, dedup, status) |
+| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, fetch, scout, filter, status) |
 | `.claude/commands/*.md` | Slash command definitions |
 | `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
 | `.claude-plugin/plugin.json` | Plugin manifest |

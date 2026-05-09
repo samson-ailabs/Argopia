@@ -5,7 +5,7 @@
 //
 // Behavior:
 //   1. Validate templates/ exists with the three required YAMLs.
-//   2. Ensure runtime dirs exist: working/, data/{raw,queue}, reports/.
+//   2. Ensure runtime dirs exist: working/, data/{listings,postings,openings}, reports/.
 //   3. Copy templates/*.yaml into working/ verbatim, overwriting any
 //      existing canonical files (profile/criteria/sources). Other files
 //      in working/ (renamed backups, personal notes) are NOT touched.
@@ -25,7 +25,7 @@ const WORKING_DIR = join(REPO_ROOT, "working");
 const FILES = ["profile.yaml", "criteria.yaml", "sources.yaml"];
 
 function ensureDirs() {
-  for (const d of ["working", "data", "data/raw", "data/queue", "reports"]) {
+  for (const d of ["working", "data", "data/listings", "data/postings", "data/openings", "reports"]) {
     const p = join(REPO_ROOT, d);
     if (!existsSync(p)) mkdirSync(p, { recursive: true });
   }
