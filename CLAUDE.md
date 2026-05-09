@@ -10,7 +10,7 @@ User-layer vs system-layer file ownership is documented in
 ## Stack
 
 - Node 20+ — two npm deps: `js-yaml` (parse YAML), `ajv` (JSON Schema validation)
-- No API keys, no Anthropic SDK — assay runs in the user's existing
+- No API keys, no Anthropic SDK — review runs in the user's existing
   Claude Code session at whatever model is configured
 - No MCP browser dependency for v0.1. SPA-rendered and auth-walled boards
   are shipped disabled in `sources.yaml` until browser-MCP support lands.
@@ -23,7 +23,7 @@ User-layer vs system-layer file ownership is documented in
 | "What does populated X look like?" | `templates/<X>.yaml` |
 | "How does X get filled or used?" | `.claude/commands/argopia-<verb>.md` |
 | "What does the user see?" | `README.md` |
-| "What's the rubric?" | `.claude/commands/argopia-assay.md` (inlined) |
+| "What's the rubric?" | `.claude/commands/argopia-review.md` (inlined) |
 | "What conventions apply?" | The `Conventions:` block at the top of each schema |
 | "Is this file user-owned or system-owned?" | `DATA_CONTRACT.md` |
 | "What's planned next?" | GitHub Issues / Discussions |
@@ -32,8 +32,8 @@ User-layer vs system-layer file ownership is documented in
 
 | Stage | Who | Does | Optimizes for | Cost |
 |---|---|---|---|---|
-| 1 — Scout | Node + WebFetch | source pre-filter, discover URLs, dedup vs `history.jsonl`, fetch JD postings (cached by URL hash), apply keyword filter, write openings | **recall** | listing fetches + posting fetches |
-| 2 — Assay | Claude | read each opening's cached posting, apply rubric, write report, append to history | **precision** | rubric tokens |
+| 1 — Survey | Node + WebFetch | source pre-filter, discover URLs, dedup vs `history.jsonl`, fetch JD postings (cached by URL hash), apply keyword filter, write openings | **recall** | listing fetches + posting fetches |
+| 2 — Review | Claude | read each opening's cached posting, apply rubric, write report, append to history | **precision** | rubric tokens |
 
 **Claude reasons. Node enforces fixed logic.** When unsure where
 something belongs:
@@ -53,7 +53,7 @@ templates/           starter scaffolds copied to working/ during onboarding
 scripts/             single-file Node helpers (.mjs)
 working/             3 user-editable files after /argopia-onboard (gitignored)
 data/                runtime state — history.jsonl, listings/, postings/, openings/
-reports/             per-JD markdown + tracker.md + insights/
+reports/             per-JD markdown + tracker.md + advice/
 ```
 
 ## `working/` contract — exactly 3 files
@@ -61,29 +61,28 @@ reports/             per-JD markdown + tracker.md + insights/
 | File | Role |
 |---|---|
 | `profile.yaml` | **Identity** — who I am, what I've built, what I know |
-| `criteria.yaml` | **Preferences** — what I want / won't accept; Stage-1 keyword rules |
+| `criteria.yaml` | **Preferences** — what I want / won't accept; survey-stage keyword rules |
 | `sources.yaml` | **Where to look** — one entry per board, dispatched by `type` (api / html / browser) |
 
 The scoring **rubric is inlined in
-`.claude/commands/argopia-assay.md`** — not a separate YAML.
+`.claude/commands/argopia-review.md`** — not a separate YAML.
 
 ## Slash commands (workflow order)
 
 1. `/argopia-onboard <cv-path>` — parse CV, copy template to `working/`,
    derive `profile.yaml` + parts of `criteria.yaml` from CV
 2. *(user manually reviews `working/*.yaml`)*
-3. `/argopia-scout [<url> ...]` — discover URLs (per enabled source,
+3. `/argopia-survey [<url> ...]` — discover URLs (per enabled source,
    pre-filtered via URL params), dedup against `history.jsonl`, fetch JD
    postings into `data/postings/` (cached by URL hash), apply keyword
    filter, write `data/openings/<TS>.jsonl`. With URL args: skip
    discovery, run the same posting-fetch + filter pipeline on those
    URLs (Mode B).
-4. `/argopia-assay [--top N | --all]` — for each queued opening:
+4. `/argopia-review [--top N | --all]` — for each queued opening:
    read posting from cache, apply the inlined rubric, write report +
    tracker row, append URL to `history.jsonl`.
-5. `/argopia-insights` — on demand; aggregate tracker → market-vs-CV
-   gap report.
-6. `/argopia-status` — pipeline state at a glance.
+5. `/argopia-advise` — on demand; aggregate tracker → CV-vs-market
+   advice (gaps, skill development, positioning rewrites).
 
 Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
@@ -92,37 +91,36 @@ Environment setup runs automatically on `npm install` via
 
 | Script | Reads | Writes | Used by |
 |---|---|---|---|
-| `fetch.mjs` | `working/sources.yaml` entry, source URL (JSON for type=api) | `data/listings/<ts>-<name>.jsonl` | scout |
-| `scout.mjs prepare <ts>` | stdin: raw JSONL; `data/history.jsonl`; `data/postings/` | stdout: unseen JSONL with posting_path + scouted_at; stderr: cache-miss report (JSON) | scout |
-| `scout.mjs inject` | stdin: JSONL with posting_path; `data/postings/<sha>.md` | stdout: same JSONL with description = first 1.5K chars of cached body | scout |
-| `scout.mjs finalize` | stdin: filter survivors JSONL | stdout: openings JSONL (description stripped) | scout |
-| `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL | scout |
+| `fetch.mjs` | `working/sources.yaml` entry, source URL (JSON for type=api) | `data/listings/<ts>-<name>.jsonl` | survey |
+| `survey.mjs prepare <ts>` | stdin: raw JSONL; `data/history.jsonl`; `data/postings/` | stdout: unseen JSONL with posting_path + scouted_at; stderr: cache-miss report (JSON) | survey |
+| `survey.mjs inject` | stdin: JSONL with posting_path; `data/postings/<sha>.md` | stdout: same JSONL with description = first 1.5K chars of cached body | survey |
+| `survey.mjs finalize` | stdin: filter survivors JSONL | stdout: openings JSONL (description stripped) | survey |
+| `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL | survey |
 | `onboard.mjs` | `templates/` | `working/` | onboard |
 | `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. | npm postinstall |
-| `status.mjs` | `data/`, `reports/tracker.md` | stdout summary | status |
-| `lib/schema.mjs` | (library) | YAML shape validator | scout/onboard |
+| `lib/schema.mjs` | (library) | YAML shape validator | survey/onboard |
 
 ## Two-stage pipeline
 
-### Stage 1 — Scout (recall-first)
+### Stage 1 — Survey (recall-first)
 
-`/argopia-scout` casts a wide net using **source pre-filter via URL
+`/argopia-survey` casts a wide net using **source pre-filter via URL
 params**: read `criteria.target.*` (`search_queries`, `remote_only`,
 `level`, `max_listing_age_days`) and append them per each source's
 `filter_hints` URL syntax. Each entry in `search_queries` triggers a
 separate fetch pass per source. The source's own server-side filter
 does the coarse work.
 
-The scout pipeline (one command, end-to-end):
+The survey pipeline (one command, end-to-end):
 
 1. **Discover** URLs from listing pages → `data/listings/<TS>-<source>.jsonl`.
-2. **Prepare** (`scout.mjs prepare`): drop URLs already in
-   `data/history.jsonl`, dedup within scout, compute `posting_path =
+2. **Prepare** (`survey.mjs prepare`): drop URLs already in
+   `data/history.jsonl`, dedup within survey, compute `posting_path =
    data/postings/<sha1-of-url>.md` for each survivor, identify cache misses.
 3. **Posting fetch**: for each cache-miss URL, WebFetch the JD posting
    and write to `data/postings/<sha1>.md` (one provenance comment +
    markdown content). Cache hits skip this step entirely.
-4. **Filter** (`scout.mjs inject` → `filter.mjs` → `scout.mjs finalize`):
+4. **Filter** (`survey.mjs inject` → `filter.mjs` → `survey.mjs finalize`):
    inject posting content as `description`, run keyword gates, strip
    description from survivors. Survivors land in
    `data/openings/<TS>.jsonl`.
@@ -138,25 +136,25 @@ Filter gates (body-aware, since body is now in context):
 | `max_listing_age_days` | criteria.yaml `target` | runs against posted-date in body |
 | Region lock | criteria.yaml `target.{preferred,acceptable}_timezones` | runs against location in body |
 
-Scout writes nothing to `history.jsonl` — that's assay's job. Re-running
-scout with tweaked criteria re-evaluates filter rejects without
-re-fetching postings (cache hits all the way through).
+Survey writes nothing to `history.jsonl` — that's review's job.
+Re-running survey with tweaked criteria re-evaluates filter rejects
+without re-fetching postings (cache hits all the way through).
 
-### Stage 2 — Assay (precision-first)
+### Stage 2 — Review (precision-first)
 
-`/argopia-assay` reads the newest `data/openings/<TS>.jsonl`, drops
-records whose URL already appears in `data/history.jsonl` (assay history
-across runs), and processes the remaining set under `--top N` /
+`/argopia-review` reads the newest `data/openings/<TS>.jsonl`, drops
+records whose URL already appears in `data/history.jsonl` (lifetime
+review history), and processes the remaining set under `--top N` /
 `--all` gating. For each:
 
 1. Read the cached posting from `posting_path` (one disk read; no network).
 2. Apply the rubric → 5 subscores + weighted total + recommendation.
 3. Write the per-JD report and append a tracker row.
 4. Append `{url, judged_at, score, recommendation}` to
-   `data/history.jsonl` so the URL won't be re-scouted.
+   `data/history.jsonl` so the URL won't be re-surveyed.
 
-Posting cache + URL-keyed history ledger together mean scout and assay
-are both idempotent and incrementally re-runnable.
+Posting cache + URL-keyed history ledger together mean survey and
+review are both idempotent and incrementally re-runnable.
 
 ## Non-obvious decisions (tribal knowledge)
 
@@ -192,7 +190,7 @@ are both idempotent and incrementally re-runnable.
   the sub-target list from `target.level` automatically.
 - **Negative keywords stay specific to vocabulary collisions.**
   Domain-collision phrases (voice actor, speech therapy, VoIP, sound
-  design). Don't add things Stage 2 should handle (location, comp,
+  design). Don't add things review should handle (location, comp,
   spam quality).
 - **Comments stay file-scope.** Profile schema comments don't reference
   rubric / scoring / consumption. Filters schema documents OR / AND-NOT
@@ -206,9 +204,9 @@ are both idempotent and incrementally re-runnable.
   `experience[0].employer` exists; no per-role `tools` while
   `tech_stack` exists; no `narrative` blob while structured fields
   exist.
-- **Don't reference assay behavior in profile / sources schema
+- **Don't reference review behavior in profile / sources schema
   comments.** File-scope only. The rubric / scoring / "model normalizes
-  X" lives in `argopia-assay.md`, not in profile schema.
+  X" lives in `argopia-review.md`, not in profile schema.
 - **Don't add per-site adapter scripts.** Source-specific behavior lives
   in `sources.yaml` config (selectors, patterns, field_map), dispatched by
   `type` (api / html / browser). Adding a `.mjs` per board would

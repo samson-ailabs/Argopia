@@ -9,21 +9,21 @@ pull`, future `argopia update`) will only touch the system layer.
 
 ## User Layer — never auto-updated
 
-Your CV, your preferences, your scout history, your reports. Argopia
-will never overwrite these.
+Your CV, your preferences, your survey history, your reports.
+Argopia will never overwrite these.
 
 | Path | Purpose |
 |------|---------|
 | `working/profile.yaml` | Your structured CV (after `/argopia-onboard`) |
 | `working/criteria.yaml` | Your target preferences and keyword filters |
 | `working/sources.yaml` | Which sources you've enabled / disabled |
-| `data/history.jsonl` | URLs the assay has judged (lifetime dedup state) |
-| `data/listings/*.jsonl` | Per-scout listing-page output, one file per source |
+| `data/history.jsonl` | URLs the review has judged (lifetime dedup state) |
+| `data/listings/*.jsonl` | Per-survey listing-page output, one file per source |
 | `data/postings/<sha1>.md` | Cached JD postings, content-addressed by URL |
-| `data/openings/*.jsonl` | Per-scout filter survivors awaiting assay |
+| `data/openings/*.jsonl` | Per-survey filter survivors awaiting review |
 | `reports/tracker.md` | Your central application tracker |
-| `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD assay reports |
-| `reports/insights/<YYYY-MM-DD>.md` | On-demand market insights |
+| `reports/<YYYY-MM-DD>/<slug>.md` | Per-JD review reports |
+| `reports/advice/<YYYY-MM-DD>.md` | On-demand CV/career advice |
 | Any local PDF or markdown CV files | Source documents you onboard from |
 
 These are gitignored — they don't ship with the repo.
@@ -37,7 +37,7 @@ will replace these with newer versions.
 |------|---------|
 | `schemas/*.schema.yaml` | Validation contracts for `working/*.yaml` |
 | `templates/*.yaml` | Starter templates copied into `working/` during onboarding |
-| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, fetch, scout, filter, status) |
+| `scripts/*.mjs` and `scripts/lib/*.mjs` | Node helpers (install, onboard, fetch, survey, filter) |
 | `.claude/commands/*.md` | Slash command definitions |
 | `agents/*.md` | Reusable subagent prompts (profile-extractor, criteria-deriver) |
 | `.claude-plugin/plugin.json` | Plugin manifest |

@@ -24,10 +24,14 @@
 
 ## What it does
 
-Manually checking 40+ job boards a week is the kind of low-signal repetitive
-work that bleeds time and quietly stops happening when life gets busy.
-Argopia automates the mechanical part so you spend your hour on the
-application itself, not the search.
+Manually checking 40+ job boards a week is the kind of low-signal
+repetitive work that bleeds time and quietly stops happening when life
+gets busy.
+
+Argopia onboards your CV, surveys public job boards for openings,
+reviews each one against your profile, and advises you on CV gaps and
+skill development as the tracker grows — so you spend your hour on
+the application itself, not the search.
 
 ```
 $ /argopia-onboard ./my-cv.pdf
@@ -35,8 +39,8 @@ $ /argopia-onboard ./my-cv.pdf
 Profile (extracted from your CV): candidate, experience, education...
 Criteria (derived from your profile): search_queries, target.level, ...
 
-$ /argopia-scout
-$ /argopia-assay --top 10
+$ /argopia-survey
+$ /argopia-review --top 10
 ```
 
 ## Principles
@@ -44,10 +48,10 @@ $ /argopia-assay --top 10
 - **CV is the spine.** Every config — keywords, deal-breakers, target
   levels, excluded companies — is derived from your CV, not the other
   way around.
-- **Cheap by default.** Scout dedups against history and a content-addressed
+- **Cheap by default.** Survey dedups against history and a content-addressed
   posting cache, so re-runs cost nothing for what you've already seen.
   The keyword filter drops 70-90% of postings before they reach the
-  rubric — assay tokens are spent only on plausible openings.
+  rubric — review tokens are spent only on plausible openings.
 - **Free everything.** Public boards + your existing Claude Code session.
   No paid APIs, no Anthropic billing, no cloud storage.
 - **Human ranks, you apply.** Argopia surfaces, scores, and explains;
@@ -76,13 +80,12 @@ That's it. The onboard command guides you through review and the rest of the pip
 
 ## The pipeline
 
-| Command                    | What it does                                                                   | Runs as                |
-|----------------------------|--------------------------------------------------------------------------------|------------------------|
-| `/argopia-onboard <cv>`    | Parse CV → populate `working/profile.yaml` and `criteria.yaml`                 | Two subagents          |
-| `/argopia-scout`           | Discover URLs from enabled sources, fetch JD postings (cached), filter, queue openings | Type-dispatched: api/html direct, browser-MCP for SPA |
-| `/argopia-assay [--top N]` | Read each opening's cached posting, score against CV, write per-JD reports | In-context Claude      |
-| `/argopia-insights`        | Aggregate tracker → market-vs-CV gap report (on demand)                        | In-context Claude      |
-| `/argopia-status`          | Pipeline state at a glance + suggested next command                            | Node script            |
+| Command                    | What it does                                                                            | Runs as                |
+|----------------------------|-----------------------------------------------------------------------------------------|------------------------|
+| `/argopia-onboard <cv>`    | Parse CV → populate `working/profile.yaml` and `criteria.yaml`                          | Two subagents          |
+| `/argopia-survey`          | Discover URLs from enabled sources, fetch JD postings (cached), filter, queue openings  | Type-dispatched: api/html direct, browser-MCP for SPA |
+| `/argopia-review [--top N]`| Read each opening's cached posting, score against CV, write per-JD reports              | In-context Claude      |
+| `/argopia-advise`          | Aggregate tracker → CV-vs-market advice (gaps, skill development, positioning rewrites) | In-context Claude      |
 
 ## Configuration
 
@@ -94,7 +97,7 @@ Three files in `working/`, three matching files in `templates/`. Each owns one c
 | `criteria.yaml`  | Preferences — what you want / won't accept        | criteria-deriver + you       |
 | `sources.yaml`   | Where to look — one entry per board               | Preset; you tune to taste    |
 
-The scoring rubric lives **inside** `/argopia-assay` — not as a
+The scoring rubric lives **inside** `/argopia-review` — not as a
 separate file the user maintains.
 
 ## Customizing the template
@@ -111,7 +114,7 @@ to customize, that's a bug — open an issue.
 
 - **No paid sources.** All shipped boards are public.
 - **No required API keys.** Just `npm install` and you're set.
-- **No separate Anthropic billing.** Scout, assay, and insights all run
+- **No separate Anthropic billing.** Survey, review, and advise all run
   inside your existing Claude Code session.
 - **Two npm deps.** `js-yaml` for parsing, `ajv` for JSON Schema validation.
 

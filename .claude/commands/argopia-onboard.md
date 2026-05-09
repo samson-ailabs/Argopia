@@ -184,7 +184,7 @@ user's working file, not hardcoded names.
 2. *(Optional)* Tweak `working/sources.yaml` if you want to toggle
    boards or adjust `max_listings`.
 
-3. Run `/argopia-scout` when satisfied.
+3. Run `/argopia-survey` when satisfied.
 ```
 
 ## Token discipline
