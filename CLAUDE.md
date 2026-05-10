@@ -27,8 +27,8 @@ this file targets me.**
 
 | Stage | Who | Does | Optimizes for | Cost |
 |---|---|---|---|---|
-| 1 — Survey | Node + WebFetch | source pre-filter, discover URLs, dedup vs `history.jsonl`, fetch JD postings (cached by URL hash), apply keyword filter, write openings | **recall** | listing fetches + posting fetches |
-| 2 — Review | Claude | read each opening's cached posting, apply rubric, write report, append to history | **precision** | rubric tokens |
+| 1 — Survey | Node + WebFetch | source pre-filter, discover URLs, dedup vs `reviews.jsonl`, fetch JD postings (cached by URL hash), apply keyword filter, write openings | **recall** | listing fetches + posting fetches |
+| 2 — Review | Claude | read each opening's cached posting, apply rubric, append one JSON line to `reviews.jsonl` | **precision** | rubric tokens |
 
 **Claude reasons. Node enforces fixed logic.** When unsure where
 something belongs:
@@ -46,8 +46,8 @@ schemas/             3 validation contracts (profile, criteria, sources)
 templates/           starter scaffolds copied to working/ during onboarding
 scripts/             single-file Node helpers (.mjs)
 working/             3 user-editable files after /argopia-onboard (gitignored)
-data/                runtime state — history.jsonl, listings/, postings/, openings/
-reports/             per-JD markdown + tracker.md + advice/
+data/                runtime state — reviews.jsonl, listings/, postings/, openings/
+reports/             dashboard.html + advice/
 ```
 
 ## `working/` contract — exactly 3 files
@@ -67,16 +67,16 @@ The scoring **rubric is inlined in
    derive `profile.yaml` + parts of `criteria.yaml` from CV
 2. *(user manually reviews `working/*.yaml`)*
 3. `/argopia-survey [<url> ...]` — discover URLs (per enabled source,
-   pre-filtered via URL params), dedup against `history.jsonl`, fetch JD
-   postings into `data/postings/` (cached by URL hash), apply keyword
-   filter, write `data/openings/<TS>.jsonl`. With URL args: skip
-   discovery, run the same posting-fetch + filter pipeline on those
-   URLs (Mode B).
+   pre-filtered via URL params), dedup against `data/reviews.jsonl`,
+   fetch JD postings into `data/postings/` (cached by URL hash), apply
+   keyword filter, write `data/openings/<TS>.jsonl`. With URL args:
+   skip discovery, run the same posting-fetch + filter pipeline on
+   those URLs (Mode B).
 4. `/argopia-review [--top N | --all]` — for each queued opening:
-   read posting from cache, apply the inlined rubric, write report +
-   tracker row, append URL to `history.jsonl`.
-5. `/argopia-advise` — on demand; aggregate tracker → CV-vs-market
-   advice (gaps, skill development, positioning rewrites).
+   read posting from cache, apply the inlined rubric, append one JSON
+   line to `data/reviews.jsonl`.
+5. `/argopia-advise` — on demand; aggregate `reviews.jsonl` →
+   CV-vs-market advice (gaps, skill development, positioning rewrites).
 
 Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
@@ -86,9 +86,9 @@ Environment setup runs automatically on `npm install` via
 | Script | Reads | Writes | Used by |
 |---|---|---|---|
 | `fetch.mjs` | `working/sources.yaml` entry, source URL (JSON for type=api) | `data/listings/<ts>-<name>.jsonl` | survey |
-| `survey.mjs prepare <ts>` | stdin: raw JSONL; `data/history.jsonl`; `data/postings/` | stdout: unseen JSONL with posting_path + scouted_at; stderr: cache-miss report (JSON) | survey |
+| `survey.mjs prepare` | stdin: raw JSONL; `data/reviews.jsonl`; `data/postings/` | stdout: unseen JSONL with posting_path; stderr: cache-miss report (JSON) | survey |
 | `survey.mjs inject` | stdin: JSONL with posting_path; `data/postings/<sha>.md` | stdout: same JSONL with description = first 1.5K chars of cached body | survey |
-| `survey.mjs finalize` | stdin: filter survivors JSONL | stdout: openings JSONL (description stripped) | survey |
+| `survey.mjs finalize` | stdin: filter survivors JSONL | stdout: openings JSONL — `{url, posting_path}` only (metadata lives in posting front-matter) | survey |
 | `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL | survey |
 | `onboard.mjs` | `templates/` | `working/` | onboard |
 | `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. | npm postinstall |
@@ -110,12 +110,12 @@ read from `working/criteria.yaml`:
 
 ## Idempotency
 
-Survey writes nothing to `history.jsonl` — that's review's job.
-Posting cache (`data/postings/<sha1>.md`) + URL-keyed history ledger
-(`data/history.jsonl`) together mean both commands are incrementally
+Survey writes nothing to `reviews.jsonl` — that's review's job.
+Posting cache (`data/postings/<sha1>.md`) + canonical review ledger
+(`data/reviews.jsonl`) together mean both commands are incrementally
 re-runnable: re-running survey with tweaked criteria re-evaluates
 filter rejects without re-fetching postings; re-running review skips
-URLs already judged.
+URLs already scored.
 
 ## Non-obvious decisions (tribal knowledge)
 
