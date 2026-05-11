@@ -29,7 +29,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "postinstall": "node scripts/install.mjs"
+    "postinstall": "node scripts/install.mjs",
+    "dashboard": "node scripts/dashboard.mjs"
   },
   "dependencies": {
     "ajv": "^8.17.1",

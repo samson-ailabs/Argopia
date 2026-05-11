@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Argopia Dashboard</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.4;
+        color: #222;
+        background: #fff;
+        /* Flex column lets the layout fill exactly the remaining viewport height
+       regardless of how tall the header / controls / wrapped chips become. */
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+      }
+      header {
+        padding: 10px 16px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        flex-wrap: wrap;
+        row-gap: 4px;
+      }
+      h1 {
+        font-size: 15px;
+        margin: 0;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .stats {
+        color: #666;
+        font-variant-numeric: tabular-nums;
+        font-size: 12.5px;
+      }
+      .controls {
+        padding: 8px 16px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .controls input[type="search"] {
+        padding: 6px 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 13px;
+      }
+      .chip-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .chip-group {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      /* Push the filter group to the right edge for visual balance against Sort. */
+      #filter-chips {
+        margin-left: auto;
+      }
+      .chip-label {
+        color: #888;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-right: 2px;
+      }
+      .chip {
+        padding: 3px 10px;
+        border: 1px solid #ccc;
+        background: #fff;
+        cursor: pointer;
+        border-radius: 12px;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      .chip:hover {
+        background: #f5f5f5;
+      }
+      .chip.active {
+        background: #222;
+        color: #fff;
+        border-color: #222;
+      }
+
+      /* Keyboard-only focus ring — visible when tabbing, not on mouse click.
+         Applies to chips, action buttons, the resizer, and the back button. */
+      .chip:focus-visible,
+      .detail-action:focus-visible,
+      .detail-back:focus-visible,
+      .resizer:focus-visible,
+      .card[data-url]:focus-visible {
+        outline: 2px solid #4080c0;
+        outline-offset: 2px;
+      }
+
+      .layout {
+        display: grid;
+        /* Default 40% list / 60% detail. Drag the divider to adjust within a
+       session; no persistence — every page load starts fresh. */
+        grid-template-columns: var(--list-w, 40%) 6px 1fr;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      /* List pane: flex column. Controls stay at top; cards-body owns the scroll. */
+      .list-pane {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .cards-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        overscroll-behavior: contain;
+      }
+      /* Detail pane: scrolls itself; isolated from the page. */
+      .detail-pane {
+        overflow: auto;
+        min-width: 0;
+        min-height: 0;
+        overscroll-behavior: contain;
+        padding: 16px 22px;
+      }
+
+      /* Draggable divider between list and detail panes. */
+      .resizer {
+        background: transparent;
+        cursor: col-resize;
+        position: relative;
+        user-select: none;
+      }
+      .resizer::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 50%;
+        width: 1px;
+        background: #ececec;
+        transition:
+          width 80ms ease,
+          background 80ms ease;
+      }
+      .resizer:hover::before,
+      .resizer.dragging::before {
+        background: #4080c0;
+        width: 2px;
+        transform: translateX(-0.5px);
+      }
+      body.dragging-cols {
+        cursor: col-resize;
+        user-select: none;
+      }
+
+      .detail-back {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        margin: 0 0 12px;
+        padding: 5px 10px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        color: #444;
+      }
+      .detail-back:hover {
+        background: #ececec;
+      }
+
+      /* Narrow screens: one column at a time. */
+      @media (max-width: 880px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .resizer {
+          display: none;
+        }
+        .detail-pane {
+          display: none;
+          padding: 14px 16px;
+        }
+        body.show-detail .list-pane {
+          display: none;
+        }
+        body.show-detail .detail-pane {
+          display: block;
+        }
+        .detail-back {
+          display: inline-flex;
+        }
+        /* Reclaim a little padding on cards too. */
+        .card {
+          padding: 12px 14px 12px 11px;
+        }
+        .card-score {
+          width: 40px;
+          height: 40px;
+          font-size: 15px;
+        }
+      }
+
+      /* Tighten controls and detail-pane padding on medium screens. */
+      @media (max-width: 1100px) {
+        .controls {
+          padding: 8px 14px;
+        }
+        .detail-pane {
+          padding: 14px 16px;
+        }
+      }
+
+      .card {
+        display: grid;
+        grid-template-columns: 56px 1fr auto;
+        grid-template-rows: auto auto;
+        column-gap: 14px;
+        row-gap: 3px;
+        padding: 14px 16px 14px 13px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        align-items: center;
+        border-left: 3px solid transparent;
+        transition: background-color 80ms ease;
+      }
+      .card:hover {
+        background: #fafafa;
+      }
+      .card.selected {
+        background: #f4f8ff;
+        border-left-color: #4080c0;
+      }
+      .card.is-skip {
+        opacity: 0.6;
+      }
+
+      .card-score {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        background: #f0f0f0;
+        color: #888;
+      }
+      .card-score.score-high {
+        background: rgba(26, 127, 26, 0.12);
+        color: #15791a;
+      }
+      .card-score.score-mid {
+        background: rgba(184, 134, 11, 0.13);
+        color: #a07308;
+      }
+      .card-score.score-low {
+        background: rgba(120, 120, 120, 0.1);
+        color: #888;
+      }
+
+      .card-title {
+        grid-column: 2;
+        grid-row: 1;
+        font-weight: 600;
+        font-size: 13.5px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .card-meta {
+        grid-column: 2;
+        grid-row: 2;
+        color: #6b7280;
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+      .card-rec {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        white-space: nowrap;
+        padding: 4px 10px;
+        border-radius: 11px;
+        align-self: center;
+      }
+      .card-rec.rec-apply {
+        background: #1a7f1a;
+        color: #fff;
+      }
+      .card-rec.rec-research {
+        background: #b8860b;
+        color: #fff;
+      }
+      .card-rec.rec-skip {
+        background: #d8d8d8;
+        color: #555;
+      }
+
+      .detail-actions {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0 4px;
+        flex-wrap: wrap;
+      }
+      .detail-action {
+        padding: 6px 12px;
+        border: 1px solid #d0d4da;
+        background: #fff;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 12px;
+        color: #555;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background-color 80ms ease,
+          border-color 80ms ease;
+      }
+      .detail-action:hover {
+        background: #f7f8fa;
+        border-color: #b8bec7;
+      }
+      /* Active states — only one button at a time is active.
+         No "primary" tint when idle: it shared the green hue with the
+         active-applied state, which made the unmarked CTA look already-clicked. */
+      .detail-action.is-active.applied {
+        background: #1a7f1a;
+        color: #fff;
+        border-color: #1a7f1a;
+        font-weight: 500;
+      }
+      .detail-action.is-active.skipped {
+        background: #b5bcc6;
+        color: #fff;
+        border-color: #b5bcc6;
+      }
+      .detail-action.is-active.saved {
+        background: #4080c0;
+        color: #fff;
+        border-color: #4080c0;
+      }
+      .detail-pane h2 {
+        font-size: 17px;
+        font-weight: 600;
+        margin: 0 0 10px;
+        line-height: 1.3;
+      }
+      .detail-pane h3 {
+        font-size: 10px;
+        margin: 22px 0 8px;
+        color: #8b95a3;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        font-weight: 600;
+      }
+      .detail-pane p {
+        margin: 4px 0;
+      }
+      .detail-pane a {
+        color: #4080c0;
+        text-decoration: none;
+      }
+      .detail-pane a:hover {
+        text-decoration: underline;
+      }
+      .detail-meta {
+        color: #6b7280;
+        font-size: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        align-items: baseline;
+        margin: 4px 0;
+      }
+      .detail-meta > span {
+        white-space: nowrap;
+      }
+      .detail-meta .meta-sep {
+        color: #ccc;
+      }
+      .empty-inline {
+        margin-left: 8px;
+        color: #b5bcc6;
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 11px;
+      }
+
+      /* Empty posting body — discreet placeholder, not bland italic. */
+      .excerpt-empty {
+        padding: 14px 12px;
+        border-radius: 4px;
+        border: 1px dashed #d8dde5;
+        background: #fafbfc;
+        text-align: center;
+        color: #8b95a3;
+        font-size: 12px;
+      }
+      .excerpt-empty .hint {
+        font-size: 11px;
+        color: #adb3bc;
+        margin-top: 4px;
+      }
+
+      .subscore-list {
+        display: grid;
+        gap: 8px;
+        max-width: 360px;
+      }
+      .subscore-row {
+        display: grid;
+        grid-template-columns: 100px 1fr 28px;
+        align-items: center;
+        gap: 12px;
+        font-size: 12px;
+      }
+      .subscore-label {
+        color: #555;
+        text-transform: capitalize;
+      }
+      .subscore-bar {
+        height: 6px;
+        background: #ecedef;
+        border-radius: 3px;
+        position: relative;
+      }
+      /* 70 = apply threshold. Faint vertical tick gives instant "above/below" context. */
+      .subscore-bar::after {
+        content: "";
+        position: absolute;
+        top: -2px;
+        bottom: -2px;
+        left: 70%;
+        width: 1px;
+        background: #b5bcc6;
+      }
+      .subscore-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        position: relative;
+        z-index: 1;
+      }
+      .subscore-fill.score-high {
+        background: #1a7f1a;
+      }
+      .subscore-fill.score-mid {
+        background: #b8860b;
+      }
+      .subscore-fill.score-low {
+        background: #b0b0b0;
+      }
+      .subscore-value {
+        text-align: right;
+        color: #333;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .tag {
+        background: #eef4ff;
+        color: #2050a0;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+      }
+      .tag.flag {
+        background: #fff3e0;
+        color: #b85c00;
+      }
+      .tag.gate {
+        background: #c0392b;
+        color: #fff;
+        font-weight: 600;
+      }
+      /* Posting body — reading view, not a data dump. */
+      .excerpt {
+        background: #fafbfb;
+        padding: 16px 20px;
+        border-radius: 6px;
+        word-wrap: break-word;
+        font-size: 13px;
+        line-height: 1.6;
+        border: 1px solid #ebeef2;
+      }
+      .excerpt.rendered h1,
+      .excerpt.rendered h2,
+      .excerpt.rendered h3,
+      .excerpt.rendered h4 {
+        font-weight: 600;
+        color: #1f2933;
+        margin: 18px 0 6px;
+        text-transform: none;
+        letter-spacing: 0;
+        line-height: 1.3;
+      }
+      .excerpt.rendered h1 {
+        font-size: 15px;
+      }
+      .excerpt.rendered h2 {
+        font-size: 14px;
+      }
+      .excerpt.rendered h3 {
+        font-size: 13px;
+      }
+      .excerpt.rendered h4 {
+        font-size: 13px;
+        color: #4a5568;
+      }
+      /* Tighten the first heading so it hugs the top of the box. */
+      .excerpt.rendered > :first-child {
+        margin-top: 0;
+      }
+      .excerpt.rendered ul {
+        margin: 6px 0;
+        padding-left: 22px;
+      }
+      .excerpt.rendered li {
+        margin: 3px 0;
+      }
+      .excerpt.rendered p {
+        margin: 6px 0;
+      }
+      .excerpt.rendered strong {
+        color: #1f2933;
+      }
+      .excerpt.rendered code {
+        background: rgba(0, 0, 0, 0.05);
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+      .excerpt.rendered a {
+        color: #2050a0;
+      }
+      .empty {
+        color: #999;
+        font-style: italic;
+        padding: 40px 0;
+        text-align: center;
+      }
+      .reasoning {
+        background: #fffaeb;
+        padding: 10px 14px;
+        border-radius: 4px;
+        border-left: 3px solid #b8860b;
+        line-height: 1.55;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Argopia Dashboard</h1>
+      <div class="stats" id="stats"></div>
+    </header>
+    <div class="layout" id="layout">
+      <div class="list-pane">
+        <div class="controls">
+          <input
+            type="search"
+            id="search"
+            placeholder="Search title, company, body…"
+            autofocus
+          />
+          <div class="chip-bar">
+            <div class="chip-group" id="sort-chips">
+              <span class="chip-label">Sort</span>
+              <button class="chip active" data-sort="score" data-label="Score">
+                Score
+              </button>
+              <button class="chip" data-sort="posted_ts" data-label="Posted">
+                Posted
+              </button>
+            </div>
+            <div class="chip-group" id="filter-chips">
+              <span class="chip-label">Filter</span>
+              <button class="chip" data-filter="apply">Apply</button>
+              <button class="chip" data-filter="research">Research</button>
+              <button class="chip" data-filter="skip">Skip</button>
+              <button class="chip" data-filter="unmarked">Unmarked</button>
+            </div>
+          </div>
+        </div>
+        <div class="cards-body" id="cards"></div>
+      </div>
+      <div class="resizer" id="resizer" title="Drag to resize columns"></div>
+      <div class="detail-pane" id="detail">
+        <p class="empty">Click a card to see the deep dive</p>
+      </div>
+    </div>
+    <script>
+      // Reviews arrive pre-enriched from dashboard.mjs:
+      //   body       — full posting body for the detail panel
+      //   posted_ts  — parsed epoch ms (used by the Posted sort)
+      const REVIEWS = __REVIEWS_JSON__;
+
+      let actions = (() => {
+        const stored = localStorage.getItem("argopia.actions");
+        if (stored) {
+          try {
+            return JSON.parse(stored);
+          } catch {}
+        }
+        return {};
+      })();
+
+      let state = {
+        search: "",
+        filter: "all",
+        sortBy: "score",
+        sortDir: "desc",
+        selectedUrl: null,
+      };
+
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+      const escape = (s) =>
+        String(s == null ? "" : s).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      // snake_case identifier → "Title case" for display.
+      // Used for soft_flags and gates_failed values (stored as identifiers but
+      // shown to humans).
+      const humanize = (s) => {
+        if (!s) return s;
+        const spaced = String(s).replace(/_/g, " ");
+        return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+      };
+
+      const getAction = (url) => actions[url]?.action;
+
+      function setAction(url, action) {
+        if (getAction(url) === action) {
+          delete actions[url];
+        } else {
+          actions[url] = { action, at: new Date().toISOString() };
+        }
+        // Wrapped: localStorage can throw on quota-exceeded, private-browsing,
+        // or disabled-storage. In-memory state still updates so the click feels
+        // responsive; persistence just silently falls through.
+        try {
+          localStorage.setItem("argopia.actions", JSON.stringify(actions));
+        } catch (e) {
+          console.warn("argopia: could not persist actions —", e.message);
+        }
+        render();
+      }
+
+      function scoreClass(s) {
+        // Aligned with rubric: ≥70 → apply tier; <70 → research tier.
+        if (s == null) return "";
+        if (s >= 70) return "score-high";
+        if (s >= 50) return "score-mid";
+        return "score-low";
+      }
+
+      // Minimal markdown renderer for posting excerpts. Handles the patterns that
+      // actually show up in JD bodies: headings, bullet lists, bold/italic, inline
+      // code, links, paragraphs. Anything else degrades to escaped text.
+      function renderMarkdown(md) {
+        if (!md) return "";
+        // Escape first; then re-introduce safe HTML on recognised patterns.
+        let h = escape(md);
+
+        // Headings (h1-h4)
+        h = h.replace(/^####\s+(.+)$/gm, "<h4>$1</h4>");
+        h = h.replace(/^###\s+(.+)$/gm, "<h3>$1</h3>");
+        h = h.replace(/^##\s+(.+)$/gm, "<h2>$1</h2>");
+        h = h.replace(/^#\s+(.+)$/gm, "<h1>$1</h1>");
+
+        // Bold-only line → h4. Many JDs (aijobs.net, etc.) use bold text
+        // as de-facto section labels instead of real headings.
+        h = h.replace(/^\*\*([^*\n]+)\*\*\s*$/gm, "<h4>$1</h4>");
+
+        // Bullet lists: collapse consecutive `*` / `-` lines into one <ul>
+        h = h.replace(/(?:^[*\-]\s+.+(?:\n|$))+/gm, (block) => {
+          const items = block
+            .trim()
+            .split(/\n/)
+            .map((line) => `<li>${line.replace(/^[*\-]\s+/, "")}</li>`)
+            .join("");
+          return `<ul>${items}</ul>`;
+        });
+
+        // Inline: bold, italic, code, links — applied after block structure.
+        h = h.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+        h = h.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>");
+        h = h.replace(/`([^`\n]+)`/g, "<code>$1</code>");
+        h = h.replace(
+          /\[([^\]]+)\]\(([^)]+)\)/g,
+          '<a href="$2" target="_blank" rel="noopener">$1</a>',
+        );
+
+        // Paragraph wrap: split on blank lines; skip blocks that are already HTML.
+        return h
+          .split(/\n{2,}/)
+          .map((p) => {
+            p = p.trim();
+            if (!p) return "";
+            if (/^<(h[1-6]|ul|ol|pre|blockquote)/.test(p)) return p;
+            return `<p>${p.replace(/\n/g, " ")}</p>`;
+          })
+          .join("\n");
+      }
+
+      function filteredReviews() {
+        let rows = REVIEWS;
+        if (state.search) {
+          const q = state.search.toLowerCase();
+          rows = rows.filter((r) =>
+            ((r.title || "") + " " + (r.company || "") + " " + (r.body || ""))
+              .toLowerCase()
+              .includes(q),
+          );
+        }
+        if (state.filter === "unmarked") {
+          rows = rows.filter((r) => !getAction(r.url));
+        } else if (state.filter !== "all") {
+          rows = rows.filter((r) => r.recommendation === state.filter);
+        }
+        rows = [...rows].sort((a, b) => {
+          let av = a[state.sortBy],
+            bv = b[state.sortBy];
+          // Null/undefined sort to the bottom regardless of direction
+          // (gate-failed JDs have score=null and shouldn't pollute the top).
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          if (typeof av === "number" && typeof bv === "number") {
+            return state.sortDir === "asc" ? av - bv : bv - av;
+          }
+          av = String(av).toLowerCase();
+          bv = String(bv).toLowerCase();
+          return state.sortDir === "asc"
+            ? av.localeCompare(bv)
+            : bv.localeCompare(av);
+        });
+        return rows;
+      }
+
+      function detailActionBtn(url, action, label) {
+        const isActive = getAction(url) === action;
+        const activeCls = isActive ? "is-active " + action : "";
+        const ariaLabel = {
+          applied: isActive ? "Unmark applied" : "Mark as applied",
+          skipped: isActive ? "Unmark skipped" : "Mark as skipped",
+          saved: isActive ? "Unmark saved" : "Save for later",
+        }[action];
+        return `<button class="detail-action ${activeCls}"
+    data-url="${escape(url)}" data-action="${action}"
+    aria-pressed="${isActive}" aria-label="${ariaLabel}">${label}</button>`;
+      }
+
+      function sortLabel(col, base) {
+        if (state.sortBy !== col) return base;
+        return `${base} ${state.sortDir === "asc" ? "↑" : "↓"}`;
+      }
+
+      function renderCards() {
+        const rows = filteredReviews();
+        const pane = $("#cards");
+        pane.innerHTML = rows
+          .map((r) => {
+            const isSelected = state.selectedUrl === r.url;
+            const isSkip = (r.gates_failed || []).length > 0;
+            const meta = [r.company, r.location, r.posted]
+              .filter(Boolean)
+              .join(" · ");
+            return `
+        <div class="card${isSelected ? " selected" : ""}${isSkip ? " is-skip" : ""}"
+             data-url="${escape(r.url)}">
+          <div class="card-score ${scoreClass(r.score)}">${r.score ?? "—"}</div>
+          <div class="card-title" title="${escape(r.title)}">${escape(r.title)}</div>
+          <div class="card-meta" title="${escape(meta)}">${escape(meta)}</div>
+          <div class="card-rec rec-${r.recommendation || ""}">${escape(r.recommendation)}</div>
+        </div>`;
+          })
+          .join("");
+
+        // Sort-chip labels with active-direction arrow.
+        // Friendly name comes from data-label; fallback to capitalized data-sort.
+        $$("#sort-chips .chip").forEach((c) => {
+          const col = c.dataset.sort;
+          const base = c.dataset.label || col[0].toUpperCase() + col.slice(1);
+          c.textContent = sortLabel(col, base);
+          c.classList.toggle("active", state.sortBy === col);
+        });
+
+        const counts = { applied: 0, skipped: 0, saved: 0 };
+        for (const a of Object.values(actions))
+          counts[a.action] = (counts[a.action] || 0) + 1;
+        $("#stats").textContent =
+          `${REVIEWS.length} reviews · showing ${rows.length} · marked: ${counts.applied || 0} applied · ${counts.skipped || 0} skipped · ${counts.saved || 0} saved`;
+      }
+
+      function renderDetail() {
+        const r = REVIEWS.find((x) => x.url === state.selectedUrl);
+        const pane = $("#detail");
+        if (!r) {
+          pane.innerHTML = `<p class="empty">Click a card to see the deep dive</p>`;
+          return;
+        }
+        const backBtn = `<button class="detail-back" data-action="back">← Back to list</button>`;
+        const gatesFailed = (r.gates_failed || []).length
+          ? `<h3>Failed gates</h3>
+       <div class="tags">${r.gates_failed.map((g) => `<span class="tag gate">${escape(humanize(g))}</span>`).join("")}</div>`
+          : "";
+        const subsBlock = r.subscores
+          ? `<h3>Subscores</h3>
+       <div class="subscore-list">${Object.entries(r.subscores)
+         .map(
+           ([k, v]) => `
+           <div class="subscore-row">
+             <span class="subscore-label">${escape(k.replace(/_/g, " "))}</span>
+             <span class="subscore-bar">
+               <span class="subscore-fill ${scoreClass(v)}" style="width: ${Math.max(0, Math.min(100, v))}%"></span>
+             </span>
+             <span class="subscore-value">${v}</span>
+           </div>`,
+         )
+         .join("")}</div>`
+          : "";
+        // Empty tag-sections inline with their header to avoid wasted vertical space.
+        const techBlock = (r.matched_tech || []).length
+          ? `<h3>Matched tech</h3>
+       <div class="tags">${r.matched_tech.map((t) => `<span class="tag">${escape(t)}</span>`).join("")}</div>`
+          : `<h3>Matched tech <span class="empty-inline">(none)</span></h3>`;
+        const softBlock = (r.soft_flags || []).length
+          ? `<h3>Soft flags</h3>
+       <div class="tags">${r.soft_flags.map((f) => `<span class="tag flag">${escape(humanize(f))}</span>`).join("")}</div>`
+          : `<h3>Soft flags <span class="empty-inline">(none)</span></h3>`;
+        const postingBlock = r.body
+          ? `<div class="excerpt rendered">${renderMarkdown(r.body)}</div>`
+          : `<div class="excerpt-empty">
+         <div>Posting body not cached on disk.</div>
+         <div class="hint">Re-run /argopia-survey to refresh the posting cache.</div>
+       </div>`;
+        pane.innerHTML = `
+    ${backBtn}
+    <h2>${escape(r.title)} — ${escape(r.company)}</h2>
+    <div class="detail-meta">
+      <span>${escape(r.location || "—")}</span>
+      <span class="meta-sep">·</span>
+      <span>posted ${escape(r.posted || "?")}</span>
+      <span class="meta-sep">·</span>
+      <span>reviewed ${(r.reviewed_at || "").slice(0, 10)}</span>
+    </div>
+    <p><a href="${escape(r.url)}" target="_blank" rel="noopener">${escape(r.url)}</a></p>
+
+    <div class="detail-actions">
+      ${detailActionBtn(r.url, "applied", "✓ I applied")}
+      ${detailActionBtn(r.url, "skipped", "✗ Skipped")}
+      ${detailActionBtn(r.url, "saved", "★ Saved for later")}
+    </div>
+
+    <h3>Reasoning</h3>
+    <p class="reasoning">${escape(r.reasoning)}</p>
+
+    ${gatesFailed}
+    ${subsBlock}
+
+    ${techBlock}
+
+    ${softBlock}
+
+    <h3>Posting</h3>
+    ${postingBlock}
+  `;
+      }
+
+      function render() {
+        renderCards();
+        renderDetail();
+      }
+
+      function selectCard(url) {
+        state.selectedUrl = url;
+        document.body.classList.add("show-detail");
+        render();
+      }
+
+      function backToList() {
+        state.selectedUrl = null;
+        document.body.classList.remove("show-detail");
+        render();
+      }
+
+      // Wiring
+      $("#search").addEventListener("input", (e) => {
+        state.search = e.target.value;
+        renderCards();
+      });
+      $$("#filter-chips .chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const value = btn.dataset.filter;
+          // Click the active chip again to toggle off (back to showing everything).
+          state.filter = state.filter === value ? "all" : value;
+          $$("#filter-chips .chip").forEach((b) => {
+            b.classList.toggle("active", b.dataset.filter === state.filter);
+          });
+          renderCards();
+        });
+      });
+      $$("#sort-chips .chip").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const col = btn.dataset.sort;
+          if (state.sortBy === col) {
+            state.sortDir = state.sortDir === "asc" ? "desc" : "asc";
+          } else {
+            state.sortBy = col;
+            // Numeric / temporal fields default descending (highest / newest first).
+            state.sortDir =
+              col === "score" || col === "posted_ts" ? "desc" : "asc";
+          }
+          renderCards();
+        });
+      });
+      // Delegated click handler:
+      //   - .detail-back (back-to-list on narrow screens)
+      //   - data-action + data-url (triage action button)
+      //   - .card[data-url] (select card)
+      document.addEventListener("click", (e) => {
+        if (e.target.closest(".detail-back")) {
+          backToList();
+          return;
+        }
+        const actionBtn = e.target.closest("[data-action][data-url]");
+        if (actionBtn) {
+          e.stopPropagation();
+          setAction(actionBtn.dataset.url, actionBtn.dataset.action);
+          return;
+        }
+        const card = e.target.closest(".card[data-url]");
+        if (card) selectCard(card.dataset.url);
+      });
+
+      // Resizable columns: drag the divider to adjust the list/detail ratio
+      // within a session. Not persisted — every page load starts at the default.
+      (() => {
+        const layout = $("#layout");
+        const resizer = $("#resizer");
+
+        let dragging = false;
+        resizer.addEventListener("mousedown", (e) => {
+          dragging = true;
+          resizer.classList.add("dragging");
+          document.body.classList.add("dragging-cols");
+          e.preventDefault();
+        });
+        document.addEventListener("mousemove", (e) => {
+          if (!dragging) return;
+          const rect = layout.getBoundingClientRect();
+          // Clamp list pane to 25-75% so neither side disappears.
+          const pct = Math.max(
+            25,
+            Math.min(75, ((e.clientX - rect.left) / rect.width) * 100),
+          );
+          layout.style.setProperty("--list-w", pct.toFixed(2) + "%");
+        });
+        document.addEventListener("mouseup", () => {
+          if (!dragging) return;
+          dragging = false;
+          resizer.classList.remove("dragging");
+          document.body.classList.remove("dragging-cols");
+        });
+      })();
+
+      render();
+    </script>
+  </body>
+</html>
