@@ -7,7 +7,7 @@ Versioning follows [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-## [0.1.0] — 2026-05-10
+## [0.1.0] — 2026-05-15
 
 First release. CV-driven job-search bot for Claude Code: drop in a CV,
 get scored job leads from public boards. No API keys, runs locally.
