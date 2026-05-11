@@ -72,11 +72,11 @@ The scoring **rubric is inlined in
    keyword filter, write `data/openings/<TS>.jsonl`. With URL args:
    skip discovery, run the same posting-fetch + filter pipeline on
    those URLs (Mode B).
-4. `/argopia-review [--top N | --all]` — for each queued opening:
+4. `/argopia-review [--limit N]` — for each queued opening:
    read posting from cache, apply the inlined rubric, append one JSON
    line to `data/reviews.jsonl`.
 5. `/argopia-advise` — on demand; aggregate `reviews.jsonl` →
-   CV-vs-market advice (gaps, skill development, positioning rewrites).
+   positioning rewrites, market gaps, pipeline health, criteria signals.
 
 Environment setup runs automatically on `npm install` via
 `scripts/install.mjs` (npm `postinstall`); no slash command for it.
@@ -91,6 +91,7 @@ Environment setup runs automatically on `npm install` via
 | `survey.mjs finalize` | stdin: filter survivors JSONL | stdout: openings JSONL — `{url, posting_path}` only (metadata lives in posting front-matter) | survey |
 | `filter.mjs` | `working/criteria.yaml` + stdin JSONL | stdout filtered JSONL | survey |
 | `onboard.mjs` | `templates/` | `working/` | onboard |
+| `dashboard.mjs` | `data/reviews.jsonl`, `data/postings/<sha>.md` | `reports/dashboard.html` — single self-contained HTML (triage state lives in browser localStorage) | `npm run dashboard` |
 | `install.mjs` | (none) | runtime dirs (`working/`, `data/`, `reports/`); env check. Auto-runs on `npm install` via `postinstall`. | npm postinstall |
 | `lib/schema.mjs` | (library) | YAML shape validator | survey/onboard |
 

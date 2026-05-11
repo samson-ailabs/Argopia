@@ -29,9 +29,9 @@ repetitive work that bleeds time and quietly stops happening when life
 gets busy.
 
 Argopia onboards your CV, surveys public job boards for openings,
-reviews each one against your profile, and advises you on CV gaps and
-skill development as the tracker grows — so you spend your hour on
-the application itself, not the search.
+reviews each one against your profile, and advises you on CV
+positioning and market gaps as the corpus grows — so you spend your
+hour on the application itself, not the search.
 
 ```
 $ /argopia-onboard ./my-cv.pdf
@@ -40,7 +40,8 @@ Profile (extracted from your CV): candidate, experience, education...
 Criteria (derived from your profile): search_queries, target.level, ...
 
 $ /argopia-survey
-$ /argopia-review --top 10
+$ /argopia-review
+$ npm run dashboard          # open reports/dashboard.html in your browser
 ```
 
 ## Principles
@@ -48,10 +49,11 @@ $ /argopia-review --top 10
 - **CV is the spine.** Every config — keywords, deal-breakers, target
   levels, excluded companies — is derived from your CV, not the other
   way around.
-- **Cheap by default.** Survey dedups against history and a content-addressed
-  posting cache, so re-runs cost nothing for what you've already seen.
-  The keyword filter drops 70-90% of postings before they reach the
-  rubric — review tokens are spent only on plausible openings.
+- **Cheap by default.** Survey dedups against past reviews and a
+  content-addressed posting cache, so re-runs cost nothing for what
+  you've already seen. The keyword filter drops 70-90% of postings
+  before they reach the rubric — review tokens are spent only on
+  plausible openings.
 - **Free everything.** Public boards + your existing Claude Code session.
   No paid APIs, no Anthropic billing, no cloud storage.
 - **Human ranks, you apply.** Argopia surfaces, scores, and explains;
@@ -83,9 +85,10 @@ That's it. The onboard command guides you through review and the rest of the pip
 | Command                    | What it does                                                                            | Runs as                |
 |----------------------------|-----------------------------------------------------------------------------------------|------------------------|
 | `/argopia-onboard <cv>`    | Parse CV → populate `working/profile.yaml` and `criteria.yaml`                          | Two subagents          |
-| `/argopia-survey`          | Discover URLs from enabled sources, fetch JD postings (cached), filter, queue openings  | Type-dispatched: api/html direct, browser-MCP for SPA |
-| `/argopia-review [--top N]`| Read each opening's cached posting, score against CV, write per-JD reports              | In-context Claude      |
-| `/argopia-advise`          | Aggregate tracker → CV-vs-market advice (gaps, skill development, positioning rewrites) | In-context Claude      |
+| `/argopia-survey`          | Discover URLs from enabled sources, fetch JD postings (cached), filter, queue openings  | Type-dispatched: api + html direct fetch |
+| `/argopia-review [--limit N]`| Read each opening's cached posting, score against CV, append one JSON line to `data/reviews.jsonl` | In-context Claude      |
+| `/argopia-advise`          | Aggregate `reviews.jsonl` → CV positioning rewrites, market gaps, pipeline health, criteria signals | In-context Claude      |
+| `npm run dashboard`        | Build `reports/dashboard.html` — sortable, filterable triage view of every review       | Local Node + browser   |
 
 ## Configuration
 
@@ -128,12 +131,13 @@ tracked and get updated alongside the repo. Edit `working/`, never
 ## Status & roadmap
 
 **v0.1.0 — public alpha.** Onboarding flow, schemas, and the full
-pipeline work end-to-end across the curated boards shipped in
-`templates/sources.yaml`. Plugin packaging in place but not yet listed
-on the Claude Code marketplace.
+pipeline (survey → review → dashboard → advise) work end-to-end across
+the curated boards shipped in `templates/sources.yaml`. Updates land
+via `git pull`; user state in `working/`, `data/`, `reports/` is
+gitignored and never clobbered.
 
 What's next: more board coverage (SPA-rendered + auth-walled boards via
-browser MCP) and optional auto-update.
+browser MCP) and additional domain templates beyond speech-AI.
 
 ## What it doesn't do (yet)
 
@@ -153,7 +157,7 @@ keeps the project active and unlocks:
 
 - More board coverage (SPA-rendered and auth-walled boards via browser MCP)
 - Additional domain templates (frontend, backend, ML research, data engineering)
-- Auto-updater (`scripts/update-system.mjs`)
+- Dashboard polish (saved searches, side-by-side compare)
 - Faster issue triage and feature requests
 
 Even $5/month makes a real difference — thank you.
