@@ -10,9 +10,11 @@
 [![Status: alpha](https://img.shields.io/badge/status-alpha-orange)](.)
 [![Sponsor](https://img.shields.io/github/sponsors/samson-ailabs?logo=github)](https://github.com/sponsors/samson-ailabs)
 
-*Hand it your CV. Get scored, ranked, deduplicated job leads — from public boards, on your laptop, free.*
+*Hand it your CV. It scans the boards, scores every opening against you, and shows its reasoning. Free, on your laptop, no API keys.*
 
 </div>
+
+<!-- TODO before public launch: add docs/dashboard.png and reference it here as a hero screenshot. The dashboard is the most show-not-tell artifact in this project. -->
 
 > *Argos Panoptes — the hundred-eyed watcher of Greek myth — guarded what
 > mattered. Never sleeping, never blinking, every eye on a different
@@ -44,16 +46,35 @@ $ /argopia-review
 $ npm run dashboard          # open reports/dashboard.html in your browser
 ```
 
+## How it works
+
+Two stages, two cost profiles.
+
+1. **Survey** runs in deterministic Node — fetches listings from
+   public boards, drops 70-90% via keyword + region + staleness
+   filters, and caches the survivors as content-addressed posting
+   files. Cheap, predictable, no tokens spent.
+2. **Review** then runs inside your existing Claude Code session —
+   reads each cached posting, scores it against your CV with a
+   two-stage rubric (binary gates → 3-criterion fit score), and
+   appends one JSON line per opening to `data/reviews.jsonl`.
+
+The dashboard renders that ledger; `/argopia-advise` reflects on it
+to suggest CV / criteria / source-mix edits.
+
+The expensive part (Claude scoring) only sees postings that already
+passed the cheap filter. Re-runs skip what's on record. Re-running
+survey costs ~zero for what you've already seen; re-running review
+skips URLs already scored.
+
 ## Principles
 
 - **CV is the spine.** Every config — keywords, deal-breakers, target
   levels, excluded companies — is derived from your CV, not the other
   way around.
-- **Cheap by default.** Survey dedups against past reviews and a
-  content-addressed posting cache, so re-runs cost nothing for what
-  you've already seen. The keyword filter drops 70-90% of postings
-  before they reach the rubric — review tokens are spent only on
-  plausible openings.
+- **Cheap by default.** Re-runs cost only what's new — the posting
+  cache and review ledger together skip what's already on disk or
+  already scored.
 - **Free everything.** Public boards + your existing Claude Code session.
   No paid APIs, no Anthropic billing, no cloud storage.
 - **Human ranks, you apply.** Argopia surfaces, scores, and explains;
@@ -103,15 +124,16 @@ Three files in `working/`, three matching files in `templates/`. Each owns one c
 The scoring rubric lives **inside** `/argopia-review` — not as a
 separate file the user maintains.
 
-## Customizing the template
+**Customizing.** `templates/` ships starter scaffolds for your tech /
+role / region. Edit them *before* running `/argopia-onboard`, or edit
+the copies in `working/` *after* onboarding. No code changes
+required — if you find yourself reaching into `scripts/`, that's a
+bug; open an issue.
 
-The three files in `templates/` are starter scaffolds. Edit them for
-your tech / role / region preferences before running `/argopia-onboard`,
-or edit the copies in `working/` after onboarding (your `working/`
-edits are gitignored and never overwritten by updates).
-
-No code changes required. If you find yourself reaching into `scripts/`
-to customize, that's a bug — open an issue.
+**Yours vs ours.** `working/`, `data/`, `reports/` are gitignored —
+yours forever. Templates, schemas, scripts, slash commands, and agents
+are tracked and updated alongside the repo via `git pull`. Your
+`working/` edits never get clobbered by updates.
 
 ## What's free / what's used
 
@@ -121,46 +143,54 @@ to customize, that's a bug — open an issue.
   inside your existing Claude Code session.
 - **Two npm deps.** `js-yaml` for parsing, `ajv` for JSON Schema validation.
 
-## What's mine vs the system
+## Roadmap
 
-`working/`, `data/`, `reports/` are gitignored — they're yours
-forever. Templates, schemas, scripts, slash commands, and agents are
-tracked and get updated alongside the repo. Edit `working/`, never
-`templates/` — your `working/` edits never get clobbered by `git pull`.
+**v0.1 (current — public alpha)**: full pipeline (onboard → survey →
+review → dashboard → advise) works end-to-end across the curated
+api + html boards shipped in `templates/sources.yaml`.
 
-## Status & roadmap
+**Next up**, roughly in order:
 
-**v0.1.0 — public alpha.** Onboarding flow, schemas, and the full
-pipeline (survey → review → dashboard → advise) work end-to-end across
-the curated boards shipped in `templates/sources.yaml`. Updates land
-via `git pull`; user state in `working/`, `data/`, `reports/` is
-gitignored and never clobbered.
+- SPA-rendered boards via browser MCP (Wellfound, Otta, etc.)
+- Auth-walled boards via browser MCP (LinkedIn, YC Work at a Startup)
+- Additional domain templates beyond speech-AI (frontend, backend,
+  ML research, data engineering)
+- Dashboard polish: saved searches, side-by-side opening comparison
+- Multi-CLI support (Gemini CLI, OpenCode, Qwen)
 
-What's next: more board coverage (SPA-rendered + auth-walled boards via
-browser MCP) and additional domain templates beyond speech-AI.
+PRs and issues welcome — see [`good first issue`](https://github.com/samson-ailabs/argopia/labels/good%20first%20issue)
+for places to land a first contribution.
 
-## What it doesn't do (yet)
+## Not in scope (by design)
 
-- **Some boards aren't supported yet** — anything SPA-rendered (heavy
-  anti-bot) or auth-walled ships disabled in `working/sources.yaml`.
-  They re-enable as browser-MCP support lands.
+These are deliberate non-goals, not roadmap items:
+
 - **Apply for you** — Argopia ranks; you click apply. Always.
   Human-in-the-loop is the design.
-- **Generate tailored CVs** per JD — separate problem; not in scope for v0.x.
-- **Multi-CLI** (Gemini CLI, OpenCode, Qwen, etc.) — Claude Code only for now.
+- **Generate tailored CVs per JD** — a different problem with
+  different trade-offs; not the same tool.
+- **Replace your judgment** — every score has a reasoning string; the
+  whole point is that *you* read it and decide.
+
+## Contributing
+
+Code contributions welcome. The [issue tracker](https://github.com/samson-ailabs/argopia/issues)
+holds bugs, feature requests, and `good first issue` labels for help
+opportunities. Two especially-welcome paths:
+
+- **Add a board** to `templates/sources.yaml` (api or html; SPA / auth
+  boards await browser-MCP support).
+- **Add a domain template** if your tech stack isn't speech-AI — the
+  three `working/` files plus a starter rubric is all that's needed.
+
+For larger work, open an issue first so we can sanity-check the scope.
 
 ## Sponsor
 
-Argopia is built and maintained solo, in spare time. If it saves you hours of
-job-search drudgery, [sponsoring on GitHub](https://github.com/sponsors/samson-ailabs)
-keeps the project active and unlocks:
-
-- More board coverage (SPA-rendered and auth-walled boards via browser MCP)
-- Additional domain templates (frontend, backend, ML research, data engineering)
-- Dashboard polish (saved searches, side-by-side compare)
-- Faster issue triage and feature requests
-
-Even $5/month makes a real difference — thank you.
+Argopia is built and maintained solo, in spare time. If it saves you
+hours of job-search drudgery, [sponsoring on GitHub](https://github.com/sponsors/samson-ailabs)
+keeps the project active and accelerates the roadmap above. Even
+$5/month makes a real difference — thank you.
 
 ## License
 
