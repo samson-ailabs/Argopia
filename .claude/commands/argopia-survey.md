@@ -266,7 +266,7 @@ Combine the prepare report + filter log. Print, tight (≤16 lines):
   filter:        <kept> kept / <total - kept> dropped
   openings:      data/openings/<TS>.jsonl (<kept> awaiting review)
 
-**Next**: /argopia-review --top 10
+**Next**: /argopia-review
 ```
 
 If any source had 0 listings: `note: <source> returned 0 listings — pre-filter URL or selectors may have drifted.`
