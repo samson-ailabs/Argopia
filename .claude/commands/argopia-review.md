@@ -138,7 +138,7 @@ gate(s), and skip the fit-score stage.
 | criterion | high (80-100) | medium (50-79) | low (0-49) |
 |---|---|---|---|
 | `domain_fit` | Squarely in target domain — multiple `keywords.positive` terms in title + body | Adjacent — applied target work in a non-target context, or one-off mentions | Generic or off-domain |
-| `tech_overlap` | ≥3 distinct `profile.tech_stack` terms in JD body | 1-2 stack terms OR adjacent tools in the same family | Generic stack only (Python, PyTorch, AWS) with no domain-specific tooling |
+| `tech_overlap` | ≥3 distinct `profile.tech_stack` terms in JD body | 1-2 stack terms OR adjacent tools in the same family | Generic stack only (mainstream language + cloud provider, e.g. Python + AWS) with no domain-specific tooling |
 | `role_quality` | Concrete scope (named systems / products / metrics), ownership wording ("own", "drive", "design from scratch"), team or org described, comp disclosed | Decent scope, some ownership wording, mostly clear responsibilities | Vague scope; "rockstar" / "ninja" / "passionate" / "fast-paced" without substance; no comp |
 
 **Weighted total**: `score = 0.50 × domain_fit + 0.30 × tech_overlap + 0.20 × role_quality`
@@ -172,7 +172,7 @@ one operation after the loop finishes. Two concrete shapes:
 **Gate-passer** (all gates passed, populated score):
 
 ```json
-{"url":"https://example.com/job/senior-voice-ai","posting_path":"data/postings/26c15c6d3c757288ff768b6ad771cb03c03be72f.md","reviewed_at":"2026-05-11","title":"Senior Voice AI Engineer","company":"Acme Voice","location":"Remote (Worldwide)","posted":"3 weeks ago","gates_failed":[],"score":83,"subscores":{"domain_fit":90,"tech_overlap":80,"role_quality":70},"recommendation":"apply","reasoning":"Squarely in target domain — LiveKit, Whisper, TTS pipelines explicitly mentioned. Concrete scope (50ms latency target) and ownership wording. Comp not disclosed.","matched_tech":["LiveKit","Whisper","VAD"],"soft_flags":[]}
+{"url":"https://example.com/job/senior-engineer","posting_path":"data/postings/26c15c6d3c757288ff768b6ad771cb03c03be72f.md","reviewed_at":"2026-05-11","title":"Senior Engineer","company":"Acme Co","location":"Remote (Worldwide)","posted":"3 weeks ago","gates_failed":[],"score":83,"subscores":{"domain_fit":90,"tech_overlap":80,"role_quality":70},"recommendation":"apply","reasoning":"Squarely in target domain — multiple positive keywords appear in title and body, including domain-specific tooling. Concrete scope (named product, latency target, team described) and clear ownership wording. Comp not disclosed.","matched_tech":["<term1>","<term2>","<term3>"],"soft_flags":[]}
 ```
 
 **Gate-failed** (one or more gates failed, score and subscores null):
