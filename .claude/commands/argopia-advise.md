@@ -1,6 +1,6 @@
 ---
 name: argopia-advise
-description: On-demand reflection on your review history — CV edits, criteria tweaks, pipeline health
+description: Reflect on reviews → recommended edits + patterns
 ---
 
 You are running Argopia advise. Goal: turn `data/reviews.jsonl` (and

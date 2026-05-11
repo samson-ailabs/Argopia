@@ -1,6 +1,6 @@
 ---
 name: argopia-review
-description: Score the queued openings against profile + criteria, append to data/reviews.jsonl
+description: Score queued openings against your CV → reviews.jsonl
 argument-hint: "[--limit N]"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: argopia-survey
-description: Survey job boards for openings, fetch JD postings, filter, queue for review
+description: Discover openings from job boards → review queue
 argument-hint: "[<url1> <url2> ...]"
 ---
 

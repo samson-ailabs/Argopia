@@ -1,6 +1,6 @@
 ---
 name: argopia-onboard
-description: CV → structured profile and criteria. Orchestrates profile-extractor and criteria-deriver subagents.
+description: Parse your CV → profile + criteria YAMLs
 argument-hint: <path-to-cv.pdf-or-markdown>
 ---
 
