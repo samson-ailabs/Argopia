@@ -5,10 +5,10 @@
 **Job-search automation for engineers, inside Claude Code.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)](.)
+[![Node](https://img.shields.io/badge/Node-20%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Built for Claude Code](https://img.shields.io/badge/built%20for-Claude%20Code-D97757)](https://docs.claude.com/en/docs/claude-code)
-[![Status: alpha](https://img.shields.io/badge/status-alpha-orange)](.)
-[![Sponsor](https://img.shields.io/github/sponsors/samson-ailabs?logo=github)](https://github.com/sponsors/samson-ailabs)
+[![Status: alpha](https://img.shields.io/badge/status-alpha-orange)](CHANGELOG.md)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github)](https://github.com/sponsors/samson-ailabs)
 
 *Hand it your CV. It scans the boards, scores every opening against you, and shows its reasoning. Free, on your laptop, no API keys.*
 
@@ -53,9 +53,7 @@ $ npm run dashboard
 
 <div align="center">
 
-<video src="docs/dashboard.mp4" controls muted loop autoplay playsinline width="90%">
-  <a href="docs/dashboard.mp4">Watch the 38-second dashboard demo</a>
-</video>
+https://github.com/user-attachments/assets/31ea3297-6463-42aa-aa61-1a2bcacda052
 
 </div>
 
@@ -151,8 +149,8 @@ the scoring rubric, the dashboard, and on-demand advise.
 
 **Next up**, roughly in order:
 
-1. **SPA boards** via browser MCP (Indeed, Glassdoor, etc.) — JS-rendered listings, no auth needed.
-2. **Auth-walled boards** (LinkedIn, etc.) — login + session management on top of browser MCP.
+1. **SPA boards** via browser MCP (Indeed, Wellfound, etc.) — JS-rendered listings, no auth needed but bot-protected.
+2. **Auth-walled boards** (LinkedIn, Glassdoor, etc.) — login + session management on top of browser MCP.
 3. **Domain templates beyond speech-AI** — frontend, backend, ML research, data engineering
 
 **Speculative / depends on demand**:
